@@ -23,12 +23,26 @@ jobs:
           node tests/test_core.js
       - name: Validate PWA package
         run: python tests/check_package.py
-      - name: Validate JSON data files
+      - name: Validate source JSON files
         run: python -m json.tool data/bonus.json >/dev/null && python -m json.tool data/campaigns.json >/dev/null
-      - name: Copy data into site
+      - name: Build compact client data
         run: |
           mkdir -p docs/data
-          cp data/*.json docs/data/
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+      - name: Validate published data budget
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
+          assert d.get('format')=='indexed-v1'
+          assert d.get('version')=='0.6.6'
+          assert d.get('validation',{}).get('ok') is True
+          assert p.stat().st_size < 6*1024*1024
+          assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
+          print('Pages client data: PASS',p.stat().st_size)
+          PY
       - uses: actions/configure-pages@v5
         with:
           enablement: true
