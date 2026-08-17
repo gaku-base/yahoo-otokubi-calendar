@@ -10,6 +10,9 @@ on:
       - '.github/workflows/refresh.yml'
   schedule:
     - cron: '18 3,9,15,21 * * *'
+concurrency:
+  group: yahoo-data-refresh
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
