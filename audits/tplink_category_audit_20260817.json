@@ -1,163 +1,323 @@
 {
-  "generated_from": "data/bonus.json",
-  "bonus_updated_at": "2026-08-17T13:03:20.856429+09:00",
-  "last_attempt_at": "2026-08-17T13:07:28.263481+09:00",
-  "last_attempt_ok": true,
-  "validation": {
-    "ok": true,
-    "issues": [],
-    "counts": {
-      "days": 47,
-      "ok": 47,
-      "partial": 0,
-      "bad": 0,
-      "campaigns": 5,
-      "stores": 264923,
-      "categories": 2350,
-      "count_warnings": 0,
-      "campaign_dates": 15,
-      "elapsed_seconds": 244.3,
-      "concurrency": 6,
-      "category_audit_issues": 0,
-      "multi_rate_conflicts": 0,
-      "recovered_days": 0,
-      "recovery_attempts": 0
-    }
-  },
+  "audited_at": "2026-08-17T17:17:49.173950+09:00",
+  "method": "live Playwright scan of every parseable category option on each exact-date Yahoo BONUS+ page",
+  "bonus_feed_updated_at": "2026-08-17T13:03:20.856429+09:00",
+  "last_refresh_attempt_at": "2026-08-17T13:07:28.263481+09:00",
+  "last_refresh_attempt_ok": true,
   "rows": [
     {
       "date": "2026-08-17",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26558,26543"
     },
     {
       "date": "2026-08-18",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26561,26545"
     },
     {
       "date": "2026-08-19",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26567,26546"
     },
     {
       "date": "2026-08-20",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26568,26547"
     },
     {
       "date": "2026-08-21",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26569,26549"
     },
     {
       "date": "2026-08-22",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26570,26552"
     },
     {
       "date": "2026-08-23",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26571,26555"
     },
     {
       "date": "2026-08-24",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26572,26557"
     },
     {
       "date": "2026-08-25",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26573,26559"
     },
     {
       "date": "2026-08-26",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26574,26560"
     },
     {
       "date": "2026-08-27",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26575,26562"
     },
     {
       "date": "2026-08-28",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26576,26563"
     },
     {
       "date": "2026-08-29",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26577,26564"
     },
     {
       "date": "2026-08-30",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26578,26565"
     },
     {
       "date": "2026-08-31",
-      "state": "absent",
-      "day_status": "ok",
-      "rates": [],
-      "categories": [],
-      "names": [],
+      "state": "listed",
+      "categories": [
+        {
+          "category": "キッチン、日用品、文具",
+          "rates": [
+            5.0
+          ]
+        }
+      ],
+      "live_complete": true,
+      "categories_total": 50,
+      "categories_succeeded": 50,
+      "failures": [],
+      "compact_expected_rates": [
+        5.0
+      ],
+      "retried": false,
       "url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/list/event/?archive=on&eid=26579,26566"
     }
   ]
