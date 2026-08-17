@@ -14,7 +14,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
-      - name: Inspect list container boundaries
+      - name: Map selectors to Yahoo event lists
         run: |
           python - <<'PY'
           import json, asyncio, sys
@@ -29,22 +29,16 @@ jobs:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
                   page=await b.new_page(locale='ja-JP')
                   await page.goto(day['url'],wait_until='domcontentloaded',timeout=60000);await page.wait_for_timeout(700)
-                  metas=[m for m in await base.select_meta(page) if m.get('rate') is not None]
-                  print('metas',json.dumps(metas,ensure_ascii=False)[:12000])
-                  m=next(x for x in metas if float(x['rate'])==5.0)
-                  opt=next(o for o in m['options'] if 'キッチン、日用品、文具' in o.get('text',''))
-                  await base.choose_option(page,m['index'],opt);await page.wait_for_timeout(800)
-                  info=await page.evaluate(r'''() => {
-                    const a=[...document.querySelectorAll('a')].find(x=>(x.href||'').includes('store.shopping.yahoo.co.jp/tplink'));
-                    if(!a)return null;
-                    let ancestors=[],p=a;
-                    for(let i=0;i<12&&p;i++,p=p.parentElement){ancestors.push({tag:p.tagName,id:p.id||'',cls:String(p.className||''),text:(p.innerText||'').replace(/\s+/g,' ').trim().slice(0,260)})}
-                    const all=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,select,a')];const ix=all.indexOf(a);return {anchor:{text:(a.innerText||'').trim(),href:a.href},ancestors,before:all.slice(Math.max(0,ix-12),ix).map(x=>({tag:x.tagName,text:(x.innerText||'').replace(/\s+/g,' ').trim().slice(0,100),href:x.href||'',id:x.id||'',cls:String(x.className||'')})),after:all.slice(ix+1,ix+8).map(x=>({tag:x.tagName,text:(x.innerText||'').replace(/\s+/g,' ').trim().slice(0,100),href:x.href||'',id:x.id||'',cls:String(x.className||'')}))};
-                  }''')
-                  print('tplink context',json.dumps(info,ensure_ascii=False,indent=2)[:30000])
-                  # Dump ancestry of the +5 select for comparison.
-                  sinfo=await page.locator('select').nth(m['index']).evaluate(r'''s=>{let out=[],p=s;for(let i=0;i<10&&p;i++,p=p.parentElement)out.push({tag:p.tagName,id:p.id||'',cls:String(p.className||''),text:(p.innerText||'').replace(/\s+/g,' ').trim().slice(0,300)});return out}''')
-                  print('select ancestry',json.dumps(sinfo,ensure_ascii=False,indent=2)[:15000])
+                  n=await page.locator('select').count();print('selects',n)
+                  for i in range(n):
+                      s=page.locator('select').nth(i)
+                      meta=await s.evaluate(r'''s=>({html:s.outerHTML,attrs:Object.fromEntries([...s.attributes].map(a=>[a.name,a.value])),parent:s.parentElement?.outerHTML?.slice(0,1500)||''})''')
+                      opt=await s.locator('option').filter(has_text='キッチン、日用品、文具').first.get_attribute('value')
+                      txt=await s.locator('option').filter(has_text='キッチン、日用品、文具').first.inner_text()
+                      print('SELECT',i,'option',txt,'value',opt,'meta',json.dumps(meta,ensure_ascii=False)[:5000])
+                      await s.select_option(value=opt);await page.wait_for_timeout(900)
+                      lists=await page.evaluate(r'''() => [...document.querySelectorAll('ul[id*="storeList"]')].map(u=>({id:u.id,count:u.querySelectorAll('a.elStoreLink').length,display:getComputedStyle(u).display,rects:u.getClientRects().length,hasTplink:[...u.querySelectorAll('a.elStoreLink')].some(a=>(a.href||'').includes('/tplink/')),first:[...u.querySelectorAll('a.elStoreLink')].slice(0,3).map(a=>(a.innerText||'').trim())}))''')
+                      print('AFTER',i,json.dumps(lists,ensure_ascii=False))
                   await b.close()
           asyncio.run(main())
           PY
