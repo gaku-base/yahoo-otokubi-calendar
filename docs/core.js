@@ -34,10 +34,10 @@
   function shopRate(day,shop,catalog){if(!day)return{rate:null,state:'missing'};if(day.status==='partial')return matchRows(day,shop,'partial',catalog);if(day.status!=='ok')return{rate:null,state:'error'};return matchRows(day,shop,'ok',catalog)}
   function eventsFor(iso,campaigns){
     let out=[];const d=new Date(iso+'T00:00:00');
-    if([5,15,25].includes(d.getDate()))out.push({title:'5のつく日',kind:'fixed'});
-    const dynamic=[];for(const c of campaigns?.campaigns||[])if((c.dates||[]).includes(iso))dynamic.push({title:c.title,period:c.period,kind:'guide'});
+    if([5,15,25].includes(d.getDate()))out.push({title:'5のつく日',rate:4,kind:'fixed'});
+    const dynamic=[];for(const c of campaigns?.campaigns||[])if((c.dates||[]).includes(iso))dynamic.push({title:c.title,period:c.period,rate:c.rate==null?null:Number(c.rate),kind:'guide'});
     const blocksFirstDay=dynamic.some(x=>x.title.includes('プレミアムな日曜日')||x.title.includes('爆買WEEK'));
-    if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',kind:'fixed'});
+    if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',rate:3,kind:'fixed'});
     out.push(...dynamic);
     const seen=new Set();return out.filter(x=>{const k=norm(x.title);if(seen.has(k))return false;seen.add(k);return true}).slice(0,5)
   }
