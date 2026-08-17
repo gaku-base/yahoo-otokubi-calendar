@@ -30,25 +30,48 @@ def check_campaign_metadata(page):
     page.locator('#shop').fill('');page.evaluate(r'''() => {campaigns={campaigns:[{title:'Brand Week',dates:['2026-08-24'],rate:null,rate_label:'最大25%',is_total:true,is_max:true,entry_required:true,target_store_limited:true,conditions:['要エントリー 対象ストア限定 付与上限あり']}]};view=new Date(2026,7,1);selectedIso='2026-08-24';render();}''')
     cell=page.get_by_role('button',name='8月24日');assert 'Brand Week 最大25%' in cell.inner_text(),cell.inner_text();cell.click();detail=page.locator('#detail').inner_text();assert 'Brand Week 最大25%' in detail and '要エントリー 対象ストア限定 付与上限あり' in detail and '単純加算しません' in detail,detail
 
+def check_top3_ranking(page):
+    page.evaluate(r'''() => {
+      bonus={store_catalog:[['テストショップ','test-shop']],days:[
+        {date:'2026-08-01',status:'ok',offers:[[0,5]]},
+        {date:'2026-08-02',status:'ok',offers:[[0,10]]},
+        {date:'2026-08-03',status:'ok',offers:[[0,5]]},
+        {date:'2026-08-04',status:'ok',offers:[[0,7]]}
+      ]};
+      campaigns={campaigns:[
+        {title:'一般加算',dates:['2026-08-03'],rate:4,is_total:false,target_store_limited:false},
+        {title:'最大表示',dates:['2026-08-01'],rate:20,is_total:true,target_store_limited:false},
+        {title:'対象ストア限定',dates:['2026-08-04'],rate:10,is_total:false,target_store_limited:true}
+      ]};
+      activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';view=new Date(2026,7,1);selectedIso='';render();
+    }''')
+    page.wait_for_function("document.querySelectorAll('#top3Strip .top3Item').length===3")
+    texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '+10%' in texts[0],texts
+    assert '2位' in texts[1] and '3日' in texts[1] and '+9%' in texts[1],texts
+    assert '3位' in texts[2] and '1日' in texts[2] and '+8%' in texts[2],texts
+    assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月3日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月1日'
+    page.locator('#top3Strip .top3Item').first.click();assert '今月のお得度 1位' in page.locator('#detail').inner_text()
+
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
         iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True)
         page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);target=target_offer(page);check_offer(page,target);check_known_alias(page,'ジョーシン','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki')
+        page.wait_for_function("document.querySelector('#top3Strip') !== null");assert page.locator('#top3Strip').is_visible()
         page.evaluate("navigator.serviceWorker && navigator.serviceWorker.ready");page.wait_for_function("navigator.serviceWorker && navigator.serviceWorker.controller !== null",timeout=10000);page.evaluate("load()");wait_loaded(page)
         cache_keys=page.evaluate("async()=> (await (await caches.open('otokubi-data-v1')).keys()).map(r=>r.url)")
         assert len(cache_keys)==3,cache_keys;assert all('?v=' not in u for u in cache_keys),cache_keys;assert {u.rsplit('/',1)[-1] for u in cache_keys}=={'bonus.json','campaigns.json','status.json'},cache_keys
-        iphone.set_offline(True);page.reload(wait_until='domcontentloaded');wait_loaded(page);check_known_alias(page,'ジョーシン','joshin');iphone.set_offline(False)
+        iphone.set_offline(True);page.reload(wait_until='domcontentloaded');wait_loaded(page);check_known_alias(page,'ジョーシン','joshin');assert page.locator('#top3Strip').is_visible();iphone.set_offline(False)
         with page.expect_download(timeout=10000) as dl:page.locator('#pngBtn').click()
         assert dl.value.suggested_filename.endswith('.png');iphone.close()
 
         desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo')
-        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_offer(page,target_offer(page));check_known_alias(page,'Joshin','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki');check_campaign_metadata(page);cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns");widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)];assert len(widths)==2 and widths[0]>widths[1]>=350,cols;desktop.close()
+        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_offer(page,target_offer(page));check_known_alias(page,'Joshin','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki');check_campaign_metadata(page);check_top3_ranking(page);cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns");widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)];assert len(widths)==2 and widths[0]>widths[1]>=350,cols;desktop.close()
 
         statusctx=browser.new_context(viewport={'width':390,'height':844},locale='ja-JP',timezone_id='Asia/Tokyo',service_workers='block')
         failed={'schema':1,'version':'0.8.0','last_attempt_at':'2026-08-17T10:00:00+09:00','last_attempt_ok':False,'last_attempt_exit_code':2,'message':'最新更新失敗','issues':['Incomplete BONUS+ days: 1'],'attempt_counts':{'partial':1},'attempt_source_updated_at':'2026-08-17T10:00:00+09:00','last_good_updated_at':'2026-08-17T09:00:00+09:00'}
         statusctx.route('**/data/status.json*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(failed,ensure_ascii=False)))
         page=statusctx.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);state=page.locator('#dataState').inner_text();assert '最新取得失敗' in state and '前回正常データを使用' in state,state;assert 'warning' in (page.locator('#dataState').get_attribute('class') or '');statusctx.close();browser.close()
-    print('PWA smoke: PASS (Joshin/Yamada aliases + candidates + store/date + iPhone offline + Windows + PNG)')
+    print('PWA smoke: PASS (Top3 ranking + Joshin/Yamada aliases + store/date + iPhone offline + Windows + PNG)')
 
 if __name__=='__main__':main()
