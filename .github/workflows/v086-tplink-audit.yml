@@ -1,0 +1,25 @@
+name: v086 TP-Link live audit
+on:
+  push:
+    branches: [chapi-v086-tplink-audit]
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Audit TP-Link independently against Yahoo daily pages
+        run: python scripts/audit_tplink_live.py
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tplink-live-audit
+          path: artifacts/tplink-audit.json
+          if-no-files-found: ignore
