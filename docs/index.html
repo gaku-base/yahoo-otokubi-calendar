@@ -1,0 +1,23 @@
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Yahoo! お得日カレンダー</title><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css">
+</head><body>
+<header><div><div class="eyebrow">Yahoo!ショッピング</div><h1>お得日カレンダー</h1></div><button id="refreshBtn" class="iconbtn" aria-label="再読み込み">↻</button></header>
+<main>
+<section class="card searchCard"><label for="shop">ショップ名 / Yahoo!ストアURL</label><div class="searchrow"><input id="shop" value="TP-Link公式ダイレクト" autocomplete="off" enterkeyhint="search"><button id="searchBtn">検索</button></div><div id="dataState" class="muted"></div></section>
+<div class="workspace">
+  <div class="calendarPane">
+    <section class="monthbar"><button id="prev" aria-label="前の月">‹</button><strong id="monthTitle"></strong><button id="next" aria-label="次の月">›</button></section>
+    <section class="legend"><span><i class="dot ten"></i>BONUS+10%以上</span><span><i class="dot five"></i>BONUS+</span><span><i class="dot evt"></i>その他お得日</span></section>
+    <section id="calendar" class="calendar"></section>
+    <div class="actions"><button id="pngBtn" class="secondary">カレンダー画像を保存</button><button id="yahooBtn" class="secondary">Yahoo!公式一覧を開く</button></div>
+  </div>
+  <aside class="sidePane">
+    <section id="detail" class="card detail"><b>日付をタップすると詳細を表示します</b></section>
+    <section class="card note"><b>表示ルール</b><p>LYPプレミアムの毎日特典は標準扱いのため表示しません。BONUS+はショップ名またはストアURLで判定します。それ以外の「対象ストア限定」企画は開催日表示で、ショップ対象可否は詳細欄から公式ページで確認してください。</p></section>
+  </aside>
+</div>
+</main>
+<footer>非公式ツール / データ元: Yahoo!ショッピング公式ページ</footer>
+<script src="core.js"></script><script src="app.js"></script></body></html>
