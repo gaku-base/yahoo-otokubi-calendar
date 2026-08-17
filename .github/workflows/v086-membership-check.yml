@@ -1,0 +1,28 @@
+name: v086 date membership check
+on:
+  push:
+    branches: [chapi-v086-date-membership]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect TP-Link date membership
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
+          cat=d.get('store_catalog',[])
+          ids=[i for i,c in enumerate(cat) if isinstance(c,list) and len(c)>1 and c[1]=='tplink']
+          print('catalog ids',ids)
+          hits=[]
+          for day in d.get('days',[]):
+              for o in day.get('offers',[]):
+                  if o and o[0] in ids:
+                      hits.append((day.get('date'),o[1],day.get('status')))
+                      break
+          print('tplink hits',len(hits))
+          for x in hits: print(*x)
+          PY
