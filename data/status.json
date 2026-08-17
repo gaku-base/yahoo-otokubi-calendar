@@ -1,12 +1,28 @@
 {
   "schema": 1,
   "version": "0.8.0",
-  "last_attempt_at": null,
-  "last_attempt_ok": null,
-  "last_attempt_exit_code": null,
-  "message": "更新状態は次回の自動取得から記録されます",
+  "last_attempt_at": "2026-08-17T12:44:47.723378+09:00",
+  "last_attempt_ok": true,
+  "last_attempt_exit_code": 0,
+  "message": "更新成功",
   "issues": [],
-  "attempt_counts": {},
-  "attempt_source_updated_at": null,
-  "last_good_updated_at": null
+  "attempt_counts": {
+    "days": 47,
+    "ok": 47,
+    "partial": 0,
+    "bad": 0,
+    "campaigns": 5,
+    "stores": 264923,
+    "categories": 2350,
+    "count_warnings": 0,
+    "campaign_dates": 15,
+    "elapsed_seconds": 307.4,
+    "concurrency": 6,
+    "category_audit_issues": 0,
+    "multi_rate_conflicts": 0,
+    "recovered_days": 2,
+    "recovery_attempts": 4
+  },
+  "attempt_source_updated_at": "2026-08-17T12:39:37.003159+09:00",
+  "last_good_updated_at": "2026-08-17T12:39:37.003159+09:00"
 }
