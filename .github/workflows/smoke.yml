@@ -1,0 +1,40 @@
+name: PWA iPhone Windows smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'tests/smoke_pwa.py'
+      - 'scripts/compact_client_data.py'
+      - '.github/workflows/smoke.yml'
+concurrency:
+  group: pwa-smoke
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Build compact local test site
+        run: |
+          mkdir -p docs/data
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+      - name: Start local site
+        run: |
+          python -m http.server 8000 --directory docs >/tmp/otokubi-http.log 2>&1 &
+          echo $! > /tmp/otokubi-http.pid
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/otokubi-http.log
+          exit 1
+      - name: Run iPhone and Windows smoke
+        env:
+          SMOKE_URL: http://127.0.0.1:8000/
+        run: python tests/smoke_pwa.py
