@@ -1,0 +1,53 @@
+name: v087 version badge check
+on:
+  push:
+    branches: [chapi-v087-version-badge]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: node --check docs/core.js && node --check docs/app.js && node --check docs/rank.js && node --check docs/date_rule.js && node --check docs/sw.js
+      - run: python tests/check_package.py
+      - run: python -m playwright install --with-deps chromium
+      - name: Build local test site
+        run: |
+          mkdir -p docs/data
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+          cp data/status.json docs/data/status.json
+      - name: Start local site
+        run: |
+          python -m http.server 8000 --directory docs >/tmp/otokubi-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/otokubi-http.log
+          exit 1
+      - name: Verify visible app version
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b=p.chromium.launch(headless=True,args=['--no-sandbox'])
+              for width,height in ((390,844),(1440,900)):
+                  page=b.new_page(viewport={'width':width,'height':height})
+                  page.goto('http://127.0.0.1:8000/',wait_until='domcontentloaded')
+                  badge=page.locator('.versionBadge')
+                  assert badge.is_visible(),f'version badge hidden at {width}x{height}'
+                  assert badge.inner_text().strip()=='v0.8.7',badge.inner_text()
+                  page.close()
+              b.close()
+          print('version badge: PASS')
+          PY
+      - name: Run full PWA smoke
+        env:
+          SMOKE_URL: http://127.0.0.1:8000/
+        run: python tests/smoke_pwa.py
