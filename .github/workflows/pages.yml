@@ -37,13 +37,14 @@ jobs:
           from pathlib import Path
           p=Path('docs/data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
           assert d.get('format')=='indexed-v1'
-          assert d.get('version')=='0.7.3'
+          assert d.get('version')=='0.7.5'
           assert d.get('validation',{}).get('ok') is True
           counts=d.get('validation',{}).get('counts',{})
           assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0, counts
+          assert counts.get('category_audit_issues',0)==0 and counts.get('multi_rate_conflicts',0)==0, counts
           assert p.stat().st_size < 6*1024*1024
           assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
-          print('Pages v0.7.3 client data: PASS',p.stat().st_size)
+          print('Pages v0.7.5 client data: PASS',p.stat().st_size)
           PY
       - uses: actions/configure-pages@v5
         with:
