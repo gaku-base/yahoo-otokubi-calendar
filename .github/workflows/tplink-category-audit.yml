@@ -9,62 +9,165 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract TP-Link categories from latest complete BONUS+ dataset
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Live-scan every exact-date Yahoo category for TP-Link
         run: |
           python - <<'PY'
-          import json
+          import asyncio,json,re
           from pathlib import Path
+          from datetime import datetime,timezone,timedelta
+          from playwright.async_api import async_playwright
+
+          START='2026-08-17'
           bonus=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
           status=json.loads(Path('data/status.json').read_text(encoding='utf-8'))
-          rows=[]
-          for d in bonus.get('days',[]):
-              date=d.get('date','')
-              if date < '2026-08-17':
-                  continue
-              hits=[s for s in d.get('stores',[]) if (s.get('slug') or '').strip().lower()=='tplink']
-              cats=sorted({c for s in hits for c in (s.get('categories') or []) if c})
-              rates=sorted({float(s.get('rate')) for s in hits if s.get('rate') is not None}, reverse=True)
-              names=sorted({s.get('name') for s in hits if s.get('name')})
-              day_status=d.get('status')
-              if hits:
-                  state='listed'
-              elif day_status=='ok':
-                  state='absent'
-              else:
-                  state='uncertain'
-              rows.append({
-                  'date':date,
-                  'state':state,
-                  'day_status':day_status,
-                  'rates':rates,
-                  'categories':cats,
-                  'names':names,
-                  'url':d.get('url'),
-              })
-          out={
-              'generated_from':'data/bonus.json',
-              'bonus_updated_at':bonus.get('updated_at'),
-              'last_attempt_at':status.get('last_attempt_at'),
-              'last_attempt_ok':status.get('last_attempt_ok'),
-              'validation':bonus.get('validation',{}),
+          catalog=bonus.get('store_catalog') or []
+          tplink_ids={i for i,c in enumerate(catalog) if isinstance(c,list) and len(c)>1 and str(c[1] or '').strip().lower()=='tplink'}
+          days=[d for d in bonus.get('days',[]) if str(d.get('date',''))>=START]
+          sem=asyncio.Semaphore(6)
+          count_re=re.compile(r'[（(](\d+)[）)]\s*$')
+          suffix_re=re.compile(r'\s*[（(]\d+[）)]\s*$')
+
+          META_JS=r'''() => {
+            const all=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,select')];
+            let rate=null,si=0,out=[];
+            for(const el of all){
+              if(/^H[1-6]$/.test(el.tagName)){
+                const m=(el.innerText||'').replace(/\s+/g,' ').match(/\+?\s*(\d{1,2}(?:\.\d+)?)\s*%\s*対象ストア/i);
+                if(m) rate=Number(m[1]);
+              }else{
+                out.push({index:si++,rate,options:[...el.options].map((o,oi)=>({index:oi,value:o.value,text:(o.innerText||o.textContent||'').replace(/\s+/g,' ').trim(),disabled:o.disabled}))});
+              }
+            }
+            return out;
+          }'''
+          TARGET_RATES_JS=r'''() => {
+            const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,a')];
+            let rate=null,out=[];
+            for(const el of nodes){
+              if(/^H[1-6]$/.test(el.tagName)){
+                const m=(el.innerText||'').replace(/\s+/g,' ').match(/\+?\s*(\d{1,2}(?:\.\d+)?)\s*%\s*対象ストア/i);
+                if(m) rate=Number(m[1]);
+                continue;
+              }
+              const href=(el.href||'').toLowerCase();
+              if(rate!==null && href.includes('store.shopping.yahoo.co.jp/tplink/')) out.push(rate);
+            }
+            return [...new Set(out)];
+          }'''
+
+          def compact_expectation(d):
+            hits=[]
+            for o in d.get('offers') or []:
+              if isinstance(o,list) and len(o)>=2 and o[0] in tplink_ids:
+                hits.append(float(o[1]))
+            return sorted(set(hits),reverse=True)
+
+          async def scan_once(ctx,d,settle_ms=500):
+            async with sem:
+              page=await ctx.new_page()
+              failures=[]; found={}
+              try:
+                resp=await page.goto(d.get('url'),wait_until='domcontentloaded',timeout=60000)
+                if resp and resp.status>=400: raise RuntimeError(f'HTTP {resp.status}')
+                await page.wait_for_timeout(600)
+                metas=[m for m in await page.evaluate(META_JS) if m.get('rate') is not None]
+                total=0; succeeded=0
+                for m in metas:
+                  rate=float(m['rate'])
+                  for opt in m.get('options') or []:
+                    if opt.get('disabled'): continue
+                    cm=count_re.search(opt.get('text') or '')
+                    if not cm: continue
+                    total+=1
+                    if int(cm.group(1))==0:
+                      succeeded+=1; continue
+                    cat=suffix_re.sub('',opt.get('text') or '').strip()
+                    try:
+                      sel=page.locator('select').nth(int(m['index']))
+                      if opt.get('value'):
+                        await sel.select_option(value=opt['value'],timeout=8000)
+                      else:
+                        await sel.select_option(index=int(opt['index']),timeout=8000)
+                      await page.wait_for_timeout(settle_ms)
+                      rates=await page.evaluate(TARGET_RATES_JS)
+                      if any(abs(float(x)-rate)<1e-9 for x in rates):
+                        found.setdefault(cat,set()).add(rate)
+                      succeeded+=1
+                    except Exception as e:
+                      failures.append({'rate':rate,'category':cat,'message':repr(e)[:240]})
+                return {'ok':not failures and total>0,'categories_total':total,'categories_succeeded':succeeded,'failures':failures[:20],'found':found}
+              except Exception as e:
+                return {'ok':False,'categories_total':0,'categories_succeeded':0,'failures':[{'message':repr(e)[:300]}],'found':found}
+              finally:
+                await page.close()
+
+          async def scan_day(ctx,d):
+            expected=compact_expectation(d)
+            first=await scan_once(ctx,d,500)
+            # If the latest compact feed says TP-Link is listed but the quick live scan misses it,
+            # retry the whole date more slowly before concluding anything.
+            if expected and not first['found']:
+              second=await scan_once(ctx,d,900)
+              result=second if second['found'] or second['ok'] else first
+              retried=True
+            else:
+              result=first; retried=False
+            cats=[{'category':c,'rates':sorted(rs,reverse=True)} for c,rs in sorted(result['found'].items())]
+            if cats:
+              state='listed'
+            elif result['ok']:
+              state='absent'
+            else:
+              state='uncertain'
+            return {
+              'date':d.get('date'),'state':state,'categories':cats,
+              'live_complete':result['ok'],'categories_total':result['categories_total'],
+              'categories_succeeded':result['categories_succeeded'],'failures':result['failures'],
+              'compact_expected_rates':expected,'retried':retried,'url':d.get('url')
+            }
+
+          async def main():
+            async with async_playwright() as p:
+              browser=await p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
+              ctx=await browser.new_context(locale='ja-JP',timezone_id='Asia/Tokyo',user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36')
+              rows=await asyncio.gather(*(scan_day(ctx,d) for d in days))
+              await browser.close()
+            rows.sort(key=lambda r:r['date'])
+            jst=timezone(timedelta(hours=9))
+            out={
+              'audited_at':datetime.now(jst).isoformat(),
+              'method':'live Playwright scan of every parseable category option on each exact-date Yahoo BONUS+ page',
+              'bonus_feed_updated_at':bonus.get('updated_at'),
+              'last_refresh_attempt_at':status.get('last_attempt_at'),
+              'last_refresh_attempt_ok':status.get('last_attempt_ok'),
               'rows':rows,
-          }
-          p=Path('audits/tplink_category_audit_20260817.json')
-          p.parent.mkdir(parents=True,exist_ok=True)
-          p.write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          print(json.dumps({'rows':len(rows),'listed':sum(r['state']=='listed' for r in rows),'absent':sum(r['state']=='absent' for r in rows),'uncertain':sum(r['state']=='uncertain' for r in rows),'updated_at':bonus.get('updated_at')},ensure_ascii=False))
-          for r in rows:
-              print(r['date'],r['state'],r['rates'],r['categories'])
+            }
+            path=Path('audits/tplink_category_audit_20260817.json')
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+            summary={'dates':len(rows),'listed':sum(r['state']=='listed' for r in rows),'absent':sum(r['state']=='absent' for r in rows),'uncertain':sum(r['state']=='uncertain' for r in rows)}
+            print(json.dumps(summary,ensure_ascii=False))
+            for r in rows:
+              print(r['date'],r['state'],[(x['category'],x['rates']) for x in r['categories']],f"{r['categories_succeeded']}/{r['categories_total']}",'expected',r['compact_expected_rates'])
+            if any(r['state']=='uncertain' for r in rows):
+              raise SystemExit('one or more dates were not completely audited')
+          asyncio.run(main())
           PY
-      - name: Commit audit report to audit branch
+      - name: Commit live audit report to audit branch
+        if: success()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add audits/tplink_category_audit_20260817.json
-          git commit -m 'audit: TP-Link categories by date'
+          git commit -m 'audit: live TP-Link categories by date'
           git push
