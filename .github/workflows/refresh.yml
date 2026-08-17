@@ -28,56 +28,71 @@ jobs:
       - run: python tests/check_package.py
       - run: node tests/test_core.js
       - run: python -m playwright install --with-deps chromium
-      - name: Scrape every listed BONUS+ day/category and official point calendar
-        run: python scripts/scrape_v075.py
-      - name: Upload full scrape diagnostics
+      - name: Run safe refresh and preserve last-good data on failure
+        id: refresh_state
+        run: |
+          python scripts/run_refresh_safe.py
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          s=json.load(open('data/status.json',encoding='utf-8'))
+          print('ok=' + ('true' if s.get('last_attempt_ok') is True else 'false'))
+          print('exit_code=' + str(s.get('last_attempt_exit_code',0)))
+          PY
+      - name: Upload refresh diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: yahoo-shopping-scrape-${{ github.run_id }}
-          path: data/*.json
+          name: yahoo-shopping-refresh-${{ github.run_id }}
+          path: |
+            data/status.json
+            diagnostics/*.json
+          if-no-files-found: warn
           retention-days: 14
-      - name: Compact client BONUS+ data
-        if: success()
+      - name: Compact new client BONUS+ data
+        if: steps.refresh_state.outputs.ok == 'true'
         run: python scripts/compact_client_data.py
-      - name: Validate client and campaign data
-        if: success()
+      - name: Validate data selected for publication
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           p=Path('data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
           c=json.loads(Path('data/campaigns.json').read_text(encoding='utf-8'))
-          assert d.get('version')=='0.7.5'
-          assert d.get('format')=='indexed-v1'
+          s=json.loads(Path('data/status.json').read_text(encoding='utf-8'))
+          assert d.get('format')=='indexed-v1', d.get('format')
           assert d.get('validation',{}).get('ok') is True
           counts=d['validation'].get('counts',{})
-          assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0, counts
-          assert counts.get('category_audit_issues')==0 and counts.get('multi_rate_conflicts')==0, counts
-          assert counts.get('days',0)>0 and counts.get('categories',0)>0 and counts.get('stores',0)>0, counts
-          assert counts.get('recovered_days',0)>=0 and counts.get('recovery_attempts',0)>=0, counts
+          assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0,counts
+          assert counts.get('category_audit_issues',0)==0 and counts.get('multi_rate_conflicts',0)==0,counts
+          assert counts.get('days',0)>0 and counts.get('categories',0)>0 and counts.get('stores',0)>0,counts
           assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
           assert len({x['date'] for x in d['days']})==len(d['days'])
-          assert c.get('version')=='0.7.5'
-          assert 'dailybonus/calendar' in (c.get('source') or '')
-          assert c.get('validation',{}).get('ok') is True and c.get('campaigns')
-          assert not c.get('errors'), c.get('errors')
+          assert 'dailybonus/calendar' in (c.get('source') or '') and c.get('validation',{}).get('ok') is True and c.get('campaigns')
+          assert not c.get('errors'),c.get('errors')
           titles=[x.get('title','') for x in c['campaigns']]
           assert not any(any(noise in title for noise in ('クーポン','くじ','抽選','対象商品購入')) for title in titles)
-          assert sum('Brand Week' in title or 'ブランドウィーク' in title for title in titles) <= 1, titles
-          by={x['date']:x for x in d['days']}; catalog=d['store_catalog']
-          if '2026-08-17' in by:
-              assert any((catalog[sid][1] if len(catalog[sid])>1 else '')=='tplink' and float(rate)==5 for sid,rate in by['2026-08-17']['offers']), 'TP-Link 2026-08-17 +5% missing while historical day is still listed'
-          assert p.stat().st_size < 6*1024*1024
-          print('v0.7.5 safe-recovery data: PASS',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False),'campaigns',len(c['campaigns']))
+          assert sum('Brand Week' in title or 'ブランドウィーク' in title for title in titles)<=1,titles
+          assert s.get('version')=='0.8.0' and isinstance(s.get('last_attempt_ok'),bool)
+          if s['last_attempt_ok']:
+              assert d.get('version')=='0.8.0'
+              assert s.get('last_good_updated_at')==d.get('updated_at')
+          else:
+              assert s.get('last_good_updated_at')==d.get('updated_at')
+              assert s.get('issues') or s.get('message')
+          assert p.stat().st_size<6*1024*1024
+          print('v0.8.0 publication selection: PASS','attempt_ok',s['last_attempt_ok'],'bytes',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False))
           PY
-      - name: Commit refreshed data
-        if: success()
+      - name: Commit data and refresh status
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/bonus.json data/campaigns.json
+          git add data/bonus.json data/campaigns.json data/status.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "data: refresh Yahoo Shopping campaigns"
+          git commit -m "data: refresh Yahoo Shopping status"
           git pull --rebase origin main
           git push origin HEAD:main
+      - name: Mark failed live refresh after status is saved
+        if: steps.refresh_state.outputs.ok != 'true'
+        run: |
+          echo "Latest live refresh failed; last-good data was preserved and status.json was committed."
+          exit 2

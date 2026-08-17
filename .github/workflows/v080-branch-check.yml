@@ -1,0 +1,54 @@
+name: v080 refresh-status branch check
+on:
+  push:
+    branches: [chapi-v080-refresh-status-v2]
+concurrency:
+  group: v080-branch-check
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - run: pytest -q
+      - run: python tests/check_package.py
+      - run: node tests/test_core.js
+      - name: Simulate failed scraper and verify byte-identical last-good restore
+        run: |
+          python - <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          import run_refresh_safe as r
+          b=Path('data/bonus.json');c=Path('data/campaigns.json')
+          hb=hashlib.sha256(b.read_bytes()).hexdigest();hc=hashlib.sha256(c.read_bytes()).hexdigest()
+          code="""import json,sys;from pathlib import Path;Path('data/bonus.json').write_text(json.dumps({'updated_at':'failed','validation':{'ok':False,'issues':['simulated category failure'],'counts':{'partial':1}}}),encoding='utf-8');Path('data/campaigns.json').write_text(json.dumps({'validation':{'ok':False}}),encoding='utf-8');sys.exit(2)"""
+          st=r.run([sys.executable,'-c',code])
+          assert st['last_attempt_ok'] is False and st['last_attempt_exit_code']==2,st
+          assert hashlib.sha256(b.read_bytes()).hexdigest()==hb
+          assert hashlib.sha256(c.read_bytes()).hexdigest()==hc
+          s=json.loads(Path('data/status.json').read_text(encoding='utf-8'));assert s['last_attempt_ok'] is False and 'simulated category failure' in s['issues']
+          assert list(Path('diagnostics').glob('*_failed_bonus.json'))
+          print('last-good failure simulation: PASS')
+          PY
+      - run: python -m playwright install --with-deps chromium
+      - name: Build status-aware local PWA
+        run: |
+          mkdir -p docs/data
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+          cp data/status.json docs/data/status.json
+          python -m http.server 8000 --directory docs >/tmp/otokubi-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/otokubi-http.log;exit 1
+      - name: Browser smoke with persisted failed-refresh status
+        env:
+          SMOKE_URL: http://127.0.0.1:8000/
+        run: python tests/smoke_pwa.py

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "version": "0.8.0",
+  "last_attempt_at": null,
+  "last_attempt_ok": null,
+  "last_attempt_exit_code": null,
+  "message": "更新状態は次回の自動取得から記録されます",
+  "issues": [],
+  "attempt_counts": {},
+  "attempt_source_updated_at": null,
+  "last_good_updated_at": null
+}
