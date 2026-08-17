@@ -47,7 +47,7 @@ def check_top3_ranking(page):
       activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';view=new Date(2026,7,1);selectedIso='';render();
     }''')
     page.wait_for_function("document.querySelectorAll('#top3Strip .top3Item').length===3")
-    absent=page.get_by_role('button',name='8月3日');assert 'BONUS+' not in absent.inner_text(),absent.inner_text();absent.click();detail=page.locator('#detail').inner_text();assert 'BONUS+' not in detail,detail
+    absent=page.get_by_role('button',name='8月3日');assert 'BONUS+' not in absent.inner_text(),absent.inner_text();absent.click();detail=page.locator('#detail').inner_text();assert 'BONUS+' not in detail,detail;assert '順位計算に使える確認済み追加特典なし' in detail and '+0%' in detail,detail
     texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert all('3日' not in t for t in texts),texts
     assert '1位' in texts[0] and '2日' in texts[0] and '+10%' in texts[0],texts
     assert '2位' in texts[1] and '5日' in texts[1] and '+9%' in texts[1],texts
@@ -59,6 +59,8 @@ def check_top3_ranking(page):
     assert '3位' in texts[2] and '4日' in texts[2] and '7,000pt' in texts[2],texts
     assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月1日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月4日'
     page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約10,000pt' in detail,detail
+    page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '予定購入 100,000円' in detail and '約6,000pt' in detail,detail;assert 'BONUS+ 約5,000pt' in detail and 'その他 約1,000pt' in detail,detail
+    page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '順位計算に使える確認済み追加特典なし' in detail and '約0pt' in detail,detail;assert 'BONUS+' not in detail,detail
 
 def main():
     with sync_playwright() as p:
@@ -80,6 +82,6 @@ def main():
         failed={'schema':1,'version':'0.8.0','last_attempt_at':'2026-08-17T10:00:00+09:00','last_attempt_ok':False,'last_attempt_exit_code':2,'message':'最新更新失敗','issues':['Incomplete BONUS+ days: 1'],'attempt_counts':{'partial':1},'attempt_source_updated_at':'2026-08-17T10:00:00+09:00','last_good_updated_at':'2026-08-17T09:00:00+09:00'}
         statusctx.route('**/data/status.json*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(failed,ensure_ascii=False)))
         page=statusctx.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);state=page.locator('#dataState').inner_text();assert '最新取得失敗' in state and '前回正常データを使用' in state,state;assert 'warning' in (page.locator('#dataState').get_attribute('class') or '');statusctx.close();browser.close()
-    print('PWA smoke: PASS (silent non-eligible + purchase amount caps + Top3 + Joshin/Yamada + iPhone offline + Windows + PNG)')
+    print('PWA smoke: PASS (clicked day info + silent non-eligible + purchase amount caps + Top3 + Joshin/Yamada + iPhone offline + Windows + PNG)')
 
 if __name__=='__main__':main()
