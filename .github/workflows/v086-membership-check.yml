@@ -14,49 +14,37 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
-      - name: Test visible-only store extraction
+      - name: Inspect list container boundaries
         run: |
           python - <<'PY'
           import json, asyncio, sys
           from pathlib import Path
           sys.path.insert(0,'scripts')
-          import scrape_v074 as strict
+          import scrape_v066 as base
           from playwright.async_api import async_playwright
-          base=strict.base
-          async def visible_dom_store_rows(page):
-              rows=await page.evaluate(r'''() => {
-                function visible(el){if(!el)return false;const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'&&el.getClientRects().length>0;}
-                const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,a')];
-                let rate=null; const out=[];
-                for(const el of nodes){
-                  if(!visible(el)) continue;
-                  if(/^H[1-6]$/.test(el.tagName)){
-                    const m=(el.innerText||'').replace(/\s+/g,' ').match(/\+?\s*(\d{1,2}(?:\.\d+)?)\s*%\s*対象ストア/i);
-                    if(m) rate=Number(m[1]);
-                    continue;
-                  }
-                  if(rate===null) continue;
-                  const href=el.href||''; let host=''; try{host=new URL(href).hostname.toLowerCase()}catch(e){}
-                  if(host!=='store.shopping.yahoo.co.jp') continue;
-                  const name=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
-                  if(name) out.push({name,url:href,rate});
-                }
-                return out;
-              }''')
-              return base.dedupe([dict(x,slug=base.slug(x.get('url',''))) for x in rows])
-          base.dom_store_rows=visible_dom_store_rows
           d=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
+          day=next(x for x in d['days'] if x['date']=='2026-08-18')
           async def main():
               async with async_playwright() as p:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
-                  ctx=await b.new_context(locale='ja-JP',timezone_id='Asia/Tokyo')
-                  for iso in ('2026-08-17','2026-08-18'):
-                      day=next(x for x in d['days'] if x['date']==iso)
-                      page=await ctx.new_page()
-                      rec=await strict.collect_event(page,iso,day['url'],day.get('label',''))
-                      hits=[s for s in rec.get('stores',[]) if s.get('slug')=='tplink']
-                      print(iso,'status',rec.get('status'),'tplink',json.dumps(hits,ensure_ascii=False),'failures',len(rec.get('diagnostics',{}).get('failures',[])),'cats',rec.get('diagnostics',{}).get('categories_succeeded'),rec.get('diagnostics',{}).get('categories_total'))
-                      await page.close()
+                  page=await b.new_page(locale='ja-JP')
+                  await page.goto(day['url'],wait_until='domcontentloaded',timeout=60000);await page.wait_for_timeout(700)
+                  metas=[m for m in await base.select_meta(page) if m.get('rate') is not None]
+                  print('metas',json.dumps(metas,ensure_ascii=False)[:12000])
+                  m=next(x for x in metas if float(x['rate'])==5.0)
+                  opt=next(o for o in m['options'] if 'キッチン、日用品、文具' in o.get('text',''))
+                  await base.choose_option(page,m['index'],opt);await page.wait_for_timeout(800)
+                  info=await page.evaluate(r'''() => {
+                    const a=[...document.querySelectorAll('a')].find(x=>(x.href||'').includes('store.shopping.yahoo.co.jp/tplink'));
+                    if(!a)return null;
+                    let ancestors=[],p=a;
+                    for(let i=0;i<12&&p;i++,p=p.parentElement){ancestors.push({tag:p.tagName,id:p.id||'',cls:String(p.className||''),text:(p.innerText||'').replace(/\s+/g,' ').trim().slice(0,260)})}
+                    const all=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,select,a')];const ix=all.indexOf(a);return {anchor:{text:(a.innerText||'').trim(),href:a.href},ancestors,before:all.slice(Math.max(0,ix-12),ix).map(x=>({tag:x.tagName,text:(x.innerText||'').replace(/\s+/g,' ').trim().slice(0,100),href:x.href||'',id:x.id||'',cls:String(x.className||'')})),after:all.slice(ix+1,ix+8).map(x=>({tag:x.tagName,text:(x.innerText||'').replace(/\s+/g,' ').trim().slice(0,100),href:x.href||'',id:x.id||'',cls:String(x.className||'')}))};
+                  }''')
+                  print('tplink context',json.dumps(info,ensure_ascii=False,indent=2)[:30000])
+                  # Dump ancestry of the +5 select for comparison.
+                  sinfo=await page.locator('select').nth(m['index']).evaluate(r'''s=>{let out=[],p=s;for(let i=0;i<10&&p;i++,p=p.parentElement)out.push({tag:p.tagName,id:p.id||'',cls:String(p.className||''),text:(p.innerText||'').replace(/\s+/g,' ').trim().slice(0,300)});return out}''')
+                  print('select ancestry',json.dumps(sinfo,ensure_ascii=False,indent=2)[:15000])
                   await b.close()
           asyncio.run(main())
           PY
