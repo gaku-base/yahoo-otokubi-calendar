@@ -1,0 +1,49 @@
+name: v0.8.8 branch validation
+on:
+  push:
+    branches: [chapi-v088-manual-refresh]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python tests/check_package.py
+      - run: node --check docs/manual_refresh.js && node --check docs/sw.js && node tests/test_core.js
+      - run: python -m playwright install --with-deps chromium
+      - name: Build local site
+        run: |
+          mkdir -p docs/data
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+          cp data/status.json docs/data/status.json
+          python -m http.server 8000 --directory docs >/tmp/site.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Run existing PWA smoke
+        env:
+          SMOKE_URL: http://127.0.0.1:8000/
+        run: python tests/smoke_pwa.py
+      - name: Check manual refresh UI and duration
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b=p.chromium.launch(headless=True,args=['--no-sandbox'])
+              page=b.new_page(viewport={'width':390,'height':844})
+              page.goto('http://127.0.0.1:8000/',wait_until='domcontentloaded')
+              page.wait_for_function("document.querySelector('#refreshMeta')?.textContent.includes('取得時間')",timeout=20000)
+              assert page.locator('#manualRefreshBtn').is_visible()
+              assert '取得時間' in page.locator('#refreshMeta').inner_text()
+              page.evaluate("window.__opened='';window.open=(u)=>{window.__opened=u;return {opener:null}}")
+              page.locator('#manualRefreshBtn').click()
+              assert 'actions/workflows/refresh.yml' in page.evaluate('window.__opened')
+              assert 'Run workflow' in page.locator('#refreshMeta').inner_text()
+              b.close()
+          print('manual refresh UI: PASS')
+          PY
