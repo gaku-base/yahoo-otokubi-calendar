@@ -36,6 +36,19 @@ def check_offer(page,target):
         page.get_by_role('button',name=f'{m}月{d}日').click()
         assert f"BONUS+ +{target['rate']:g}%" in page.locator('#detail').inner_text()
 
+def check_campaign_metadata(page):
+    page.locator('#shop').fill('')
+    page.evaluate(r'''() => {
+      campaigns={campaigns:[{title:'Brand Week',dates:['2026-08-24'],rate:null,rate_label:'最大25%',is_total:true,is_max:true,entry_required:true,target_store_limited:true,conditions:['要エントリー 対象ストア限定 付与上限あり']}]};
+      view=new Date(2026,7,1);selectedIso='2026-08-24';render();
+    }''')
+    cell=page.get_by_role('button',name='8月24日')
+    assert 'Brand Week 最大25%' in cell.inner_text(),cell.inner_text()
+    cell.click();detail=page.locator('#detail').inner_text()
+    assert 'Brand Week 最大25%' in detail,detail
+    assert '要エントリー 対象ストア限定 付与上限あり' in detail,detail
+    assert '単純加算しません' in detail,detail
+
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
@@ -53,11 +66,11 @@ def main():
         iphone.close()
 
         desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo')
-        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_offer(page,target_offer(page))
+        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_offer(page,target_offer(page));check_campaign_metadata(page)
         cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns")
         widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)]
         assert len(widths)==2 and widths[0]>widths[1]>=350,cols
         desktop.close();browser.close()
-    print('PWA smoke: PASS (dynamic store/date + iPhone online/offline + bounded cache + Windows + PNG)')
+    print('PWA smoke: PASS (store/date + campaign labels + iPhone offline + bounded cache + Windows + PNG)')
 
 if __name__=='__main__': main()
