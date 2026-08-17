@@ -1,0 +1,45 @@
+name: v072 optimized live benchmark
+on:
+  workflow_dispatch:
+  push:
+    branches: [chapi-v071-calendar-source]
+    paths:
+      - 'scripts/scrape_v072.py'
+      - '.github/workflows/v072-live-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - run: pytest -q tests/test_calendar_campaigns.py tests/test_v066.py tests/test_compact.py
+      - run: python -m playwright install --with-deps chromium
+      - name: Run optimized complete live scrape
+        run: python scripts/scrape_v072.py
+      - name: Verify live outputs and compact budget
+        run: |
+          python scripts/compact_client_data.py --input data/bonus.json --output /tmp/bonus-client.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          full=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
+          client=json.loads(Path('/tmp/bonus-client.json').read_text(encoding='utf-8'))
+          v=full['validation'];assert v['ok'],v
+          assert v['counts']['partial']==0 and v['counts']['bad']==0,v
+          assert v['counts']['days']>0 and v['counts']['categories']>0 and v['counts']['stores']>0,v
+          assert Path('/tmp/bonus-client.json').stat().st_size<6*1024*1024
+          assert client['validation']['ok'] is True
+          print('v072 live benchmark: PASS',json.dumps(v['counts'],ensure_ascii=False),'client_bytes',Path('/tmp/bonus-client.json').stat().st_size)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v072-live-${{ github.run_id }}
+          path: data/*.json
+          retention-days: 7
