@@ -6,6 +6,9 @@ on:
       - 'scripts/scrape_v074.py'
       - 'tests/test_v074.py'
       - '.github/workflows/v074-live-benchmark.yml'
+concurrency:
+  group: v074-category-audit
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -22,17 +25,17 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Run full live scrape with category-option audit
         run: python scripts/scrape_v074.py
-      - name: Verify every listed category is auditable
+      - name: Verify every category and store rate is unambiguous
         run: |
           python scripts/compact_client_data.py --input data/bonus.json --output /tmp/bonus-client.json
           python - <<'PY'
           import json
           from pathlib import Path
           full=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'));v=full['validation'];assert v['ok'],v
-          c=v['counts'];assert c['partial']==0 and c['bad']==0 and c['count_warnings']==0 and c['category_audit_issues']==0,c
+          c=v['counts'];assert c['partial']==0 and c['bad']==0 and c['count_warnings']==0 and c['category_audit_issues']==0 and c['multi_rate_conflicts']==0,c
           assert c['days']>0 and c['categories']>0 and c['stores']>0,c
           assert Path('/tmp/bonus-client.json').stat().st_size<6*1024*1024
-          print('v074 category audit: PASS',json.dumps(c,ensure_ascii=False),'client_bytes',Path('/tmp/bonus-client.json').stat().st_size)
+          print('v074 category/rate audit: PASS',json.dumps(c,ensure_ascii=False),'client_bytes',Path('/tmp/bonus-client.json').stat().st_size)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
