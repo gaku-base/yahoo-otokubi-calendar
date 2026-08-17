@@ -46,14 +46,19 @@ jobs:
           from pathlib import Path
           p=Path('data/bonus.json')
           d=json.loads(p.read_text(encoding='utf-8'))
-          assert d.get('version')=='0.6.3'
+          assert d.get('version')=='0.6.4'
+          assert d.get('format')=='indexed-v1'
           assert d.get('validation',{}).get('ok') is True
-          assert len(d.get('days',[]))>0
+          assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
           by={x['date']:x for x in d['days']}
-          hit=[s for s in by['2026-08-17']['stores'] if s.get('slug')=='tplink' and float(s.get('rate',-1))==5]
-          assert hit, 'TP-Link 2026-08-17 +5% missing after compaction'
-          assert p.stat().st_size < 25*1024*1024
-          print('compact client data: PASS', p.stat().st_size)
+          catalog=d['store_catalog']
+          hit=[]
+          for sid,rate in by['2026-08-17']['offers']:
+              row=catalog[sid]
+              if len(row)>1 and row[1]=='tplink' and float(rate)==5: hit.append((sid,rate))
+          assert hit, 'TP-Link 2026-08-17 +5% missing after indexed compaction'
+          assert p.stat().st_size < 8*1024*1024
+          print('indexed client data: PASS', p.stat().st_size, 'catalog',len(catalog),'offers',sum(len(x.get('offers',[])) for x in d['days']))
           PY
       - name: Commit refreshed data
         if: success()
