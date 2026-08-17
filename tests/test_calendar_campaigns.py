@@ -138,44 +138,23 @@ Brand Week
 def by_title(rows,title):return next(x for x in rows if x['title']==title)
 
 def test_parse_calendar_discrete_dates_rates_and_conditions():
-    rows=m.parse_calendar_text(SAMPLE,date(2026,8,17))
-    plus2=by_title(rows,'ボーナスストアPlusでさらに+2%')
-    assert plus2['rate']==2 and plus2['dates']==['2026-08-12','2026-08-14','2026-08-18','2026-09-02']
-    assert plus2['entry_required'] and plus2['target_store_limited']
-    plus3=by_title(rows,'ボーナスストアPlus 優良ストアでさらに+3%')
-    assert plus3['rate']==3 and plus3['dates']==['2026-08-12','2026-09-02']
+    rows=m.parse_calendar_text(SAMPLE,date(2026,8,17));plus2=by_title(rows,'ボーナスストアPlusでさらに+2%')
+    assert plus2['rate']==2 and plus2['dates']==['2026-08-12','2026-08-14','2026-08-18','2026-09-02']; assert plus2['entry_required'] and plus2['target_store_limited']
+    plus3=by_title(rows,'ボーナスストアPlus 優良ストアでさらに+3%'); assert plus3['rate']==3 and plus3['dates']==['2026-08-12','2026-09-02']
     five=by_title(rows,'5のつく日');assert five['rate']==4 and five['dates']==['2026-08-15','2026-08-25','2026-09-05']
     sunday=by_title(rows,'プレミアムな日曜日');assert sunday['rate']==5 and sunday['dates']==['2026-08-16']
     thank=by_title(rows,'ヤフショ感謝デー');assert thank['rate']==5 and thank['is_max'] and thank['dates']==['2026-08-22']
-    bw=by_title(rows,'Brand Week');assert bw['rate'] is None and bw['rate_label']=='最大25%' and len(bw['dates'])==7
-    assert bw['dates'][0]=='2026-08-24' and bw['dates'][-1]=='2026-08-30'
-    assert not any('くじ' in x['title'] for x in rows)
+    bw=by_title(rows,'Brand Week');assert bw['rate'] is None and bw['rate_label']=='最大25%' and len(bw['dates'])==7; assert bw['dates'][0]=='2026-08-24' and bw['dates'][-1]=='2026-08-30'; assert not any('くじ' in x['title'] for x in rows)
 
 def test_live_shape_without_range_uses_reference_date():
     rows=m.parse_calendar_text(LIVE_NO_RANGE,date(2026,8,17))
-    assert by_title(rows,'ボーナスストアPlusでさらに+2%')['dates']==['2026-08-18','2026-08-21']
-    assert by_title(rows,'ボーナスストアPlus 優良ストアでさらに+3%')['dates']==['2026-08-18']
-    assert by_title(rows,'ヤフショ感謝デー')['dates']==['2026-08-22']
-    assert by_title(rows,'プレミアムな日曜日')['dates']==['2026-08-23']
-    assert by_title(rows,'Brand Week')['dates']==['2026-08-24','2026-08-25','2026-08-26','2026-08-27','2026-08-28','2026-08-29','2026-08-30']
+    assert by_title(rows,'ボーナスストアPlusでさらに+2%')['dates']==['2026-08-18','2026-08-21']; assert by_title(rows,'ボーナスストアPlus 優良ストアでさらに+3%')['dates']==['2026-08-18']; assert by_title(rows,'ヤフショ感謝デー')['dates']==['2026-08-22']; assert by_title(rows,'プレミアムな日曜日')['dates']==['2026-08-23']; assert by_title(rows,'Brand Week')['dates']==['2026-08-24','2026-08-25','2026-08-26','2026-08-27','2026-08-28','2026-08-29','2026-08-30']
 
 def test_rate_parser_does_not_treat_off_or_lottery_as_additive_points():
-    assert m.parse_rate('最大+5%')['is_max']
-    assert m.parse_rate('＋3％')['rate']==3
-    assert m.parse_rate('10%OFF') is None
-    assert m.parse_rate('最大25%') is None and m.parse_total_rate('最大25%')['is_total']
-    assert m.parse_rate('最大1万円相当') is None
+    assert m.parse_rate('最大+5%')['is_max']; assert m.parse_rate('＋3％')['rate']==3; assert m.parse_rate('10%OFF') is None; assert m.parse_rate('最大25%') is None and m.parse_total_rate('最大25%')['is_total']; assert m.parse_rate('最大1万円相当') is None
 
-def test_merge_safe_guide_only_adds_safe_named_future_campaigns():
+def test_merge_safe_guide_only_adds_known_additive_fallbacks_and_no_brand_alias():
     cal=m.parse_calendar_text(SAMPLE,date(2026,8,17))
-    guide={'source':'guide','campaigns':[
-        {'title':'プレミアムな日曜日','dates':['2026-09-20'],'period':'p'},
-        {'title':'ヤフショ感謝デー','dates':['2026-09-22'],'period':'p'},
-        {'title':'チャンスタイム','dates':['2026-10-01'],'period':'p'},
-        {'title':'キリンビバレッジ対象商品購入でPayPayポイント最大+15％！','dates':['2026-09-01'],'period':'p'},
-    ]}
+    guide={'source':'guide','campaigns':[{'title':'プレミアムな日曜日','dates':['2026-09-20'],'period':'p'},{'title':'ヤフショ感謝デー','dates':['2026-09-22'],'period':'p'},{'title':'チャンスタイム','dates':['2026-10-01'],'period':'p'},{'title':'キリンビバレッジ対象商品購入でPayPayポイント最大+15％！','dates':['2026-09-01'],'period':'p'},{'title':'ヤフショ Brand Weekポイントキャンペーン','dates':['2026-08-24','2026-08-25'],'period':'p'}]}
     rows=m.merge_safe_guide(cal,guide)
-    assert '2026-09-20' in by_title(rows,'プレミアムな日曜日')['dates']
-    assert '2026-09-22' in by_title(rows,'ヤフショ感謝デー')['dates']
-    assert not any(x['title']=='チャンスタイム' for x in rows)
-    assert not any('キリン' in x['title'] for x in rows)
+    assert '2026-09-20' in by_title(rows,'プレミアムな日曜日')['dates']; assert '2026-09-22' in by_title(rows,'ヤフショ感謝デー')['dates']; assert not any(x['title']=='チャンスタイム' for x in rows); assert not any('キリン' in x['title'] for x in rows); assert sum('Brand Week' in x['title'] for x in rows)==1
