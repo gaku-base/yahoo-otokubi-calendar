@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 DEFAULT_PATH=ROOT/'data'/'bonus.json'
-VERSION='0.6.6'
+VERSION='0.7.1'
 FORMAT='indexed-v1'
 MAX_BYTES=6*1024*1024
 
