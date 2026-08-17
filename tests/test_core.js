@@ -10,6 +10,13 @@ assert.equal(c.shopRate({...day,status:'partial'},'不存在').state,'uncertain'
 assert.equal(c.shopRate(null,'TP-Link').state,'missing');
 const amb={status:'ok',stores:[{name:'ABC公式店',slug:'abc1',rate:5},{name:'ABCアウトレット店',slug:'abc2',rate:10}]};
 assert.equal(c.shopRate(amb,'ABC').state,'ambiguous');
+const catalog=[['TP-Link公式ダイレクト','tplink'],['ABC公式店','abc1'],['ABCアウトレット店','abc2']];
+const indexed={status:'ok',offers:[[0,5],[1,5],[2,10]]};
+assert.equal(c.shopRate(indexed,'https://store.shopping.yahoo.co.jp/tplink/',catalog).rate,5);
+assert.equal(c.shopRate(indexed,'TP-Link公式ダイレクト',catalog).rate,5);
+assert.equal(c.shopRate(indexed,'TP-Link',catalog).rate,5);
+assert.equal(c.shopRate(indexed,'ABC',catalog).state,'ambiguous');
+assert.equal(c.shopRate({...indexed,status:'partial'},'不存在',catalog).state,'uncertain');
 let ev=c.eventsFor('2026-08-25',{campaigns:[{title:'テスト企画',dates:['2026-08-25']},{title:'テスト企画',dates:['2026-08-25']}]});
 assert.deepEqual(ev.map(x=>x.title),['5のつく日','テスト企画']);
 ev=c.eventsFor('2026-09-01',{campaigns:[]});assert(ev.some(x=>x.title==='ファーストデイ'));
