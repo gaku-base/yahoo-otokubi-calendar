@@ -20,6 +20,8 @@ jobs:
           mkdir -p docs/data
           cp data/*.json docs/data/
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
