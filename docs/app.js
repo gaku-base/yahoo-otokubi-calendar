@@ -1,4 +1,4 @@
-let bonus={days:[],errors:[],store_catalog:[]},campaigns={campaigns:[]};let view=new Date();view=new Date(view.getFullYear(),view.getMonth(),1);let selectedIso='';
+let bonus={days:[],errors:[],store_catalog:[]},campaigns={campaigns:[]},refreshStatus={last_attempt_ok:null};let view=new Date();view=new Date(view.getFullYear(),view.getMonth(),1);let selectedIso='';
 const $=s=>document.querySelector(s),esc=s=>(s||'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 const {norm,slugFromInput,matchRows,shopRate,eventsFor:coreEventsFor,fmtRate}=OtokubiCore;
 function ageHours(iso){if(!iso)return Infinity;return (Date.now()-new Date(iso).getTime())/36e5}
@@ -6,17 +6,21 @@ async function fetchJson(url){const r=await fetch(url+'?v='+Date.now(),{cache:'n
 function srFor(rec,shop){return shopRate(rec,shop,bonus.store_catalog)}
 function isBonusData(x){return x&&Array.isArray(x.days)&&(Array.isArray(x.store_catalog)||x.days.every(d=>Array.isArray(d.stores)||Array.isArray(d.offers)))}
 function isCampaignData(x){return x&&Array.isArray(x.campaigns)}
+function isStatusData(x){return x&&Object.prototype.hasOwnProperty.call(x,'last_attempt_ok')}
 async function load(){
   $('#dataState').textContent='公式データを読み込み中…';
-  const [br,cr]=await Promise.allSettled([fetchJson('data/bonus.json'),fetchJson('data/campaigns.json')]);
+  const [br,cr,rr]=await Promise.allSettled([fetchJson('data/bonus.json'),fetchJson('data/campaigns.json'),fetchJson('data/status.json')]);
   const warnings=[];
   if(br.status==='fulfilled'&&isBonusData(br.value))bonus=br.value;else warnings.push(bonus.days?.length?'BONUS+更新失敗（前回データを表示）':'BONUS+データ取得失敗');
   if(cr.status==='fulfilled'&&isCampaignData(cr.value))campaigns=cr.value;else warnings.push(campaigns.campaigns?.length?'キャンペーン更新失敗（前回データを表示）':'キャンペーンデータ取得失敗');
+  if(rr.status==='fulfilled'&&isStatusData(rr.value))refreshStatus=rr.value;else warnings.push('更新状態を確認できません');
   const u=bonus.updated_at?new Date(bonus.updated_at).toLocaleString('ja-JP'):'未取得';
   const partial=(bonus.days||[]).filter(x=>x.status==='partial').length,bad=(bonus.days||[]).filter(x=>['fetch_error','parse_error'].includes(x.status)).length,stale=ageHours(bonus.updated_at)>48;
-  const parts=[`更新: ${u}`,`BONUS+ ${bonus.days?.length||0}日`];
-  if(partial)parts.push(`部分取得 ${partial}日`);if(bad)parts.push(`エラー ${bad}日`);if(stale)parts.push('⚠ データが古い');parts.push(...warnings);
-  $('#dataState').textContent=parts.join(' / ');$('#dataState').classList.toggle('warning',stale||bad>0||warnings.length>0);
+  const parts=[`データ更新: ${u}`,`BONUS+ ${bonus.days?.length||0}日`];
+  if(partial)parts.push(`部分取得 ${partial}日`);if(bad)parts.push(`エラー ${bad}日`);if(stale)parts.push('⚠ データが古い');
+  if(refreshStatus.last_attempt_ok===false){const at=refreshStatus.last_attempt_at?new Date(refreshStatus.last_attempt_at).toLocaleString('ja-JP'):'';parts.push(`⚠ 最新取得失敗${at?` (${at})`:''}・前回正常データを使用`)}
+  parts.push(...warnings);
+  $('#dataState').textContent=parts.join(' / ');$('#dataState').classList.toggle('warning',stale||bad>0||refreshStatus.last_attempt_ok===false||warnings.length>0);
   render();if(selectedIso){const rec=(bonus.days||[]).find(x=>x.date===selectedIso),sr=srFor(rec,$('#shop').value.trim()),ev=eventsFor(selectedIso);showDetail(selectedIso,rec,sr,ev)}
 }
 function eventsFor(iso){return coreEventsFor(iso,campaigns)}
