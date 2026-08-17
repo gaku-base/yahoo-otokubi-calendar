@@ -1,0 +1,70 @@
+name: TP-Link category audit
+on:
+  push:
+    branches: [chapi-tplink-category-audit-20260817]
+    paths:
+      - '.github/workflows/tplink-category-audit.yml'
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract TP-Link categories from latest complete BONUS+ dataset
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          bonus=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
+          status=json.loads(Path('data/status.json').read_text(encoding='utf-8'))
+          rows=[]
+          for d in bonus.get('days',[]):
+              date=d.get('date','')
+              if date < '2026-08-17':
+                  continue
+              hits=[s for s in d.get('stores',[]) if (s.get('slug') or '').strip().lower()=='tplink']
+              cats=sorted({c for s in hits for c in (s.get('categories') or []) if c})
+              rates=sorted({float(s.get('rate')) for s in hits if s.get('rate') is not None}, reverse=True)
+              names=sorted({s.get('name') for s in hits if s.get('name')})
+              day_status=d.get('status')
+              if hits:
+                  state='listed'
+              elif day_status=='ok':
+                  state='absent'
+              else:
+                  state='uncertain'
+              rows.append({
+                  'date':date,
+                  'state':state,
+                  'day_status':day_status,
+                  'rates':rates,
+                  'categories':cats,
+                  'names':names,
+                  'url':d.get('url'),
+              })
+          out={
+              'generated_from':'data/bonus.json',
+              'bonus_updated_at':bonus.get('updated_at'),
+              'last_attempt_at':status.get('last_attempt_at'),
+              'last_attempt_ok':status.get('last_attempt_ok'),
+              'validation':bonus.get('validation',{}),
+              'rows':rows,
+          }
+          p=Path('audits/tplink_category_audit_20260817.json')
+          p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'rows':len(rows),'listed':sum(r['state']=='listed' for r in rows),'absent':sum(r['state']=='absent' for r in rows),'uncertain':sum(r['state']=='uncertain' for r in rows),'updated_at':bonus.get('updated_at')},ensure_ascii=False))
+          for r in rows:
+              print(r['date'],r['state'],r['rates'],r['categories'])
+          PY
+      - name: Commit audit report to audit branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audits/tplink_category_audit_20260817.json
+          git commit -m 'audit: TP-Link categories by date'
+          git push
