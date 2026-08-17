@@ -1,5 +1,5 @@
-const SHELL_CACHE='otokubi-v083',DATA_CACHE='otokubi-data-v1';
-const ASSETS=['./','index.html','styles.css','core.js','app.js','manifest.webmanifest','icon.svg'];
+const SHELL_CACHE='otokubi-v084',DATA_CACHE='otokubi-data-v1';
+const ASSETS=['./','index.html','styles.css','rank.css','core.js','app.js','rank.js','manifest.webmanifest','icon.svg'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(SHELL_CACHE);await c.addAll(ASSETS);await self.skipWaiting();})()));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('otokubi-')&&k!==SHELL_CACHE&&k!==DATA_CACHE).map(k=>caches.delete(k)));await self.clients.claim();})()));
 function dataKey(req){const u=new URL(req.url);u.search='';u.hash='';return new Request(u.toString(),{method:'GET'});}
