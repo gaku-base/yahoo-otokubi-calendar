@@ -25,7 +25,7 @@ def sample():
 def test_indexed_compaction_deduplicates_and_keeps_max_rate():
     out=compact(sample()); validate(out)
     assert out['format']=='indexed-v1'
-    assert out['version']=='0.6.6'
+    assert out['version']=='0.7.1'
     assert len(out['store_catalog'])==2
     offers=dict(out['days'][0]['offers'])
     tplink_id=next(i for i,row in enumerate(out['store_catalog']) if row[1]=='tplink')
