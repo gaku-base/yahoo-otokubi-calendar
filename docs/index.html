@@ -5,7 +5,7 @@
 </head><body>
 <header><div><div class="eyebrow">Yahoo!ショッピング</div><h1>お得日カレンダー</h1></div><button id="refreshBtn" class="iconbtn" aria-label="再読み込み">↻</button></header>
 <main>
-<section class="card searchCard"><label for="shop">ショップ名 / Yahoo!ストアURL</label><div class="searchrow"><input id="shop" value="" placeholder="例：Joshin / ヤマダ電機 / TP-Link" autocomplete="off" enterkeyhint="search"><button id="searchBtn">検索</button></div><div id="shopSuggestions" class="suggestions" aria-live="polite"></div><div id="dataState" class="muted"></div></section>
+<section class="card searchCard"><label for="shop">ショップ名 / Yahoo!ストアURL</label><div class="searchrow"><input id="shop" value="" placeholder="例：Joshin / ヤマダ電機 / TP-Link" autocomplete="off" enterkeyhint="search"><button id="searchBtn">検索</button></div><div id="shopSuggestions" class="suggestions" aria-live="polite"></div><div class="amountRow"><label for="purchaseAmount">予定購入金額</label><div class="amountInput"><span>¥</span><input id="purchaseAmount" type="number" min="0" step="100" inputmode="numeric" placeholder="例：30000" aria-describedby="amountHelp"></div><small id="amountHelp">入力すると、付与上限・注文下限を考慮した概算ポイントでTOP3を並べ替えます。</small></div><div id="dataState" class="muted"></div></section>
 <div class="workspace">
   <div class="calendarPane">
     <section class="monthbar"><button id="prev" aria-label="前の月">‹</button><strong id="monthTitle"></strong><button id="next" aria-label="次の月">›</button></section>
@@ -15,9 +15,9 @@
   </div>
   <aside class="sidePane">
     <section id="detail" class="card detail"><b>日付をタップすると詳細を表示します</b></section>
-    <section class="card note"><b>表示ルール</b><p>LYPプレミアムの毎日特典は標準扱いのため表示しません。BONUS+はショップ名またはストアURLで判定します。ショップ名はYahoo!上の正式名称だけでなく、Joshin／ジョーシン、ヤマダ電機／ヤマダデンキなど一般的な表記でも検索できます。複数候補がある場合は候補からショップを選択してください。お得度TOP3は、そのショップのBONUS+と、対象ストア限定ではない加算率が確認できるキャンペーンを合計して順位付けします。「最大○%」や対象可否が未確認の企画は順位計算へ加えません。</p></section>
+    <section class="card note"><b>表示ルール</b><p>LYPプレミアムの毎日特典は標準扱いのため表示しません。BONUS+はショップ名またはストアURLで判定します。ショップ名はYahoo!上の正式名称だけでなく、Joshin／ジョーシン、ヤマダ電機／ヤマダデンキなど一般的な表記でも検索できます。複数候補がある場合は候補からショップを選択してください。予定購入金額を入力した場合、お得度TOP3は確認できたBONUS+と対象可否を確認できるキャンペーンについて、注文下限・付与上限を考慮した概算ポイントで順位付けします。金額は概算用で、実際の対象金額は税抜価格・クーポン利用などにより異なります。「最大○%」や対象ストアか確認できない企画は順位計算へ加えません。</p></section>
   </aside>
 </div>
 </main>
-<footer>非公式ツール v0.8.4 / データ元: Yahoo!ショッピング公式ページ</footer>
+<footer>非公式ツール v0.8.5 / データ元: Yahoo!ショッピング公式ページ</footer>
 <script src="core.js"></script><script src="app.js"></script><script src="rank.js"></script></body></html>
