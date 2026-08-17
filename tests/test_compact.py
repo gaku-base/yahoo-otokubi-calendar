@@ -12,7 +12,7 @@ def sample():
 
 def test_indexed_compaction_deduplicates_and_keeps_max_rate():
     out=compact(sample()); validate(out)
-    assert out['format']=='indexed-v1' and out['version']=='0.7.2' and len(out['store_catalog'])==2
+    assert out['format']=='indexed-v1' and out['version']=='0.7.3' and len(out['store_catalog'])==2
     offers=dict(out['days'][0]['offers']); tplink_id=next(i for i,row in enumerate(out['store_catalog']) if row[1]=='tplink')
     assert offers[tplink_id]==10.0 and len(offers)==2
     assert out['days'][0]['diagnostics']['count_warnings']==1 and out['days'][0]['diagnostics']['stores_unique']==2
