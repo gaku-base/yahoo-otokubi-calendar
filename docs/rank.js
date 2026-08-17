@@ -108,11 +108,17 @@ showDetail=function(iso,rec,sr,ev){
     else html+=`<div class="detailRank otherRank">今月のお得度 ${row.rank}位</div>`;
   }else html+='<div class="detailRank noDeal">順位計算に使える確認済み追加特典なし</div>';
   if(row.amount>0){
-    const effective=fmtRate(Math.round(row.effectiveRate*10)/10),bonusText=row.bonusPoints?`BONUS+ 約${Math.round(row.bonusPoints).toLocaleString('ja-JP')}pt`:'BONUS+ 0pt',extraText=row.extraPoints?`その他 約${Math.round(row.extraPoints).toLocaleString('ja-JP')}pt`:'その他 0pt';
-    html+=`<div class="amountEstimate dayDealInfo">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → 順位計算に使える確認済み追加特典 <b>約${Math.round(row.points).toLocaleString('ja-JP')}pt</b>（実質+${effective}%）<br><span class="dealBreakdown">${bonusText} / ${extraText}</span><br><small>入力金額を対象金額として計算した概算です。税・クーポン・対象商品・対象ストア条件などで実際の付与額は変わります。</small></div>`;
+    const effective=fmtRate(Math.round(row.effectiveRate*10)/10),parts=[];
+    if(row.bonusPoints>0)parts.push(`BONUS+ 約${Math.round(row.bonusPoints).toLocaleString('ja-JP')}pt`);
+    if(row.extraPoints>0)parts.push(`その他 約${Math.round(row.extraPoints).toLocaleString('ja-JP')}pt`);
+    const breakdown=parts.length?parts.join(' / '):'順位計算に使える確認済み加算なし';
+    html+=`<div class="amountEstimate dayDealInfo">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → 順位計算に使える確認済み追加特典 <b>約${Math.round(row.points).toLocaleString('ja-JP')}pt</b>（実質+${effective}%）<br><span class="dealBreakdown">${breakdown}</span><br><small>入力金額を対象金額として計算した概算です。税・クーポン・対象商品・対象ストア条件などで実際の付与額は変わります。</small></div>`;
   }else{
-    const bonusText=row.bonusRate?`BONUS+ +${fmtRate(row.bonusRate)}%`:'BONUS+ 0%',extraText=row.campaignRate?`その他 +${fmtRate(row.campaignRate)}%`:'その他 0%';
-    html+=`<div class="amountEstimate dayDealInfo">順位計算に使える確認済み追加特典 <b>+${fmtRate(row.rateScore)}%</b><br><span class="dealBreakdown">${bonusText} / ${extraText}</span><br><small>予定購入金額を入力すると、付与上限を考慮した概算ポイントも表示します。</small></div>`;
+    const parts=[];
+    if(row.bonusRate>0)parts.push(`BONUS+ +${fmtRate(row.bonusRate)}%`);
+    if(row.campaignRate>0)parts.push(`その他 +${fmtRate(row.campaignRate)}%`);
+    const breakdown=parts.length?parts.join(' / '):'順位計算に使える確認済み加算なし';
+    html+=`<div class="amountEstimate dayDealInfo">順位計算に使える確認済み追加特典 <b>+${fmtRate(row.rateScore)}%</b><br><span class="dealBreakdown">${breakdown}</span><br><small>予定購入金額を入力すると、付与上限を考慮した概算ポイントも表示します。</small></div>`;
   }
   d.insertAdjacentHTML('afterend',html)
 };
