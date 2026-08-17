@@ -15,6 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          node --check docs/core.js
+          node --check docs/app.js
+          node --check docs/sw.js
+          node tests/test_core.js
+      - name: Validate PWA package
+        run: python tests/check_package.py
+      - name: Validate JSON data files
+        run: python -m json.tool data/bonus.json >/dev/null && python -m json.tool data/campaigns.json >/dev/null
       - name: Copy data into site
         run: |
           mkdir -p docs/data
