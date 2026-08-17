@@ -1,6 +1,5 @@
 from __future__ import annotations
 import os
-from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 URL=os.environ.get('SMOKE_URL','http://127.0.0.1:8000/')
@@ -32,10 +31,14 @@ def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
 
-        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo')
+        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True)
         page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_tplink(page)
         page.evaluate("navigator.serviceWorker && navigator.serviceWorker.ready")
         page.wait_for_function("navigator.serviceWorker && navigator.serviceWorker.controller !== null",timeout=10000)
+        page.evaluate("load()") ; wait_loaded(page)
+        cache_keys=page.evaluate("async()=> (await (await caches.open('otokubi-data-v1')).keys()).map(r=>r.url)")
+        assert len(cache_keys)==2,cache_keys
+        assert all('?v=' not in u for u in cache_keys),cache_keys
         iphone.set_offline(True);page.reload(wait_until='domcontentloaded');wait_loaded(page);check_tplink(page);iphone.set_offline(False)
         with page.expect_download(timeout=10000) as dl:
             page.locator('#pngBtn').click()
@@ -47,6 +50,6 @@ def main():
         cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns")
         assert '360px' in cols, cols
         desktop.close();browser.close()
-    print('PWA smoke: PASS (iPhone online/offline + Windows + TP-Link + PNG)')
+    print('PWA smoke: PASS (iPhone online/offline + bounded cache + Windows + TP-Link + PNG)')
 
 if __name__=='__main__': main()
