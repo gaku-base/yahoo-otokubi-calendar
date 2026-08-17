@@ -34,23 +34,33 @@ function campaignPoints(e,amount,iso){
   const r=Number(e.rate);if(!Number.isFinite(r)||r<=0)return 0;
   const rule=campaignMoneyRule(e,iso);return pointsFor(r,amount,rule.min,rule.cap);
 }
-function monthRanking(){
+function scoreDay(iso,day,shop,amount){
+  const rec=(bonus.days||[]).find(d=>d.date===iso),sr=srFor(rec,shop),ev=eventsFor(iso);
+  const bonusRate=sr.state==='match'?Number(sr.rate)||0:0;
+  const campaignRate=ev.reduce((sum,e)=>sum+campaignAddRate(e),0);
+  const rateScore=bonusRate+campaignRate;
+  const bonusPoints=amount&&sr.state==='match'?pointsFor(bonusRate,amount,0,bonusCap(bonusRate)):0;
+  const extraPoints=amount?ev.reduce((sum,e)=>sum+campaignPoints(e,amount,iso),0):0;
+  const points=bonusPoints+extraPoints,score=amount?points:rateScore;
+  return {iso,day,score,points,amount,rateScore,effectiveRate:amount?points/amount*100:rateScore,bonusRate,campaignRate,bonusPoints,extraPoints,eventCount:ev.length};
+}
+function monthRows(){
   const y=view.getFullYear(),m=view.getMonth(),days=new Date(y,m+1,0).getDate(),shop=currentShopQuery(),amount=purchaseAmount(),rows=[];
   for(let n=1;n<=days;n++){
-    const iso=isoForDay(y,m,n),rec=(bonus.days||[]).find(d=>d.date===iso),sr=srFor(rec,shop),ev=eventsFor(iso);
-    const bonusRate=sr.state==='match'?Number(sr.rate)||0:0;
-    const campaignRate=ev.reduce((sum,e)=>sum+campaignAddRate(e),0);
-    const rateScore=bonusRate+campaignRate;
-    let points=0;
-    if(amount){
-      if(sr.state==='match')points+=pointsFor(bonusRate,amount,0,bonusCap(bonusRate));
-      points+=ev.reduce((sum,e)=>sum+campaignPoints(e,amount,iso),0);
-    }
-    const score=amount?points:rateScore;if(score<=0)continue;
-    rows.push({iso,day:n,score,points,amount,rateScore,effectiveRate:amount?points/amount*100:rateScore,bonusRate,campaignRate,eventCount:ev.length});
+    const row=scoreDay(isoForDay(y,m,n),n,shop,amount);
+    if(row.score>0)rows.push(row);
   }
   rows.sort((a,b)=>b.score-a.score||b.rateScore-a.rateScore||b.bonusRate-a.bonusRate||b.eventCount-a.eventCount||a.day-b.day);
-  return rows.slice(0,3);
+  rows.forEach((row,i)=>row.rank=i+1);
+  return rows;
+}
+function monthRanking(){return monthRows().slice(0,3)}
+function clickedDayInfo(iso){
+  const rows=monthRows(),ranked=rows.find(x=>x.iso===iso);if(ranked)return ranked;
+  const y=view.getFullYear(),m=view.getMonth(),prefix=`${y}-${String(m+1).padStart(2,'0')}-`;
+  if(!String(iso||'').startsWith(prefix))return null;
+  const day=Number(String(iso).slice(8));if(!day)return null;
+  return {...scoreDay(iso,day,currentShopQuery(),purchaseAmount()),rank:null};
 }
 function ensureLegend(){
   const legend=document.querySelector('.legend');
@@ -91,10 +101,19 @@ render=function(){originalRender();queueMicrotask(updateRankMarks)};
 const originalShowDetail=showDetail;
 showDetail=function(iso,rec,sr,ev){
   originalShowDetail(iso,rec,sr,ev);
-  const ranked=monthRanking(),r=ranked.findIndex(x=>x.iso===iso);if(r<0)return;
-  const row=ranked[r],d=document.querySelector('#detail h3');if(!d)return;
-  let html=`<div class="detailRank ${RANKS[r].cls}">${r===0?'👑':r===1?'🥈':'🥉'} 今月のお得度 ${RANKS[r].label}</div>`;
-  if(row.amount>0)html+=`<div class="amountEstimate">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → 確認できる追加特典 <b>約${Math.round(row.points).toLocaleString('ja-JP')}pt</b><br><small>入力金額を対象金額として計算した概算です。税・クーポン・対象商品・対象ストア条件などで実際の付与額は変わります。</small></div>`;
+  const row=clickedDayInfo(iso),d=document.querySelector('#detail h3');if(!row||!d)return;
+  let html='';
+  if(row.rank){
+    if(row.rank<=3){const cfg=RANKS[row.rank-1];html+=`<div class="detailRank ${cfg.cls}">${row.rank===1?'👑':row.rank===2?'🥈':'🥉'} 今月のお得度 ${row.rank}位</div>`}
+    else html+=`<div class="detailRank otherRank">今月のお得度 ${row.rank}位</div>`;
+  }else html+='<div class="detailRank noDeal">順位計算に使える確認済み追加特典なし</div>';
+  if(row.amount>0){
+    const effective=fmtRate(Math.round(row.effectiveRate*10)/10),bonusText=row.bonusPoints?`BONUS+ 約${Math.round(row.bonusPoints).toLocaleString('ja-JP')}pt`:'BONUS+ 0pt',extraText=row.extraPoints?`その他 約${Math.round(row.extraPoints).toLocaleString('ja-JP')}pt`:'その他 0pt';
+    html+=`<div class="amountEstimate dayDealInfo">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → 順位計算に使える確認済み追加特典 <b>約${Math.round(row.points).toLocaleString('ja-JP')}pt</b>（実質+${effective}%）<br><span class="dealBreakdown">${bonusText} / ${extraText}</span><br><small>入力金額を対象金額として計算した概算です。税・クーポン・対象商品・対象ストア条件などで実際の付与額は変わります。</small></div>`;
+  }else{
+    const bonusText=row.bonusRate?`BONUS+ +${fmtRate(row.bonusRate)}%`:'BONUS+ 0%',extraText=row.campaignRate?`その他 +${fmtRate(row.campaignRate)}%`:'その他 0%';
+    html+=`<div class="amountEstimate dayDealInfo">順位計算に使える確認済み追加特典 <b>+${fmtRate(row.rateScore)}%</b><br><span class="dealBreakdown">${bonusText} / ${extraText}</span><br><small>予定購入金額を入力すると、付与上限を考慮した概算ポイントも表示します。</small></div>`;
+  }
   d.insertAdjacentHTML('afterend',html)
 };
 window.addEventListener('load',()=>setTimeout(updateRankMarks,250));
