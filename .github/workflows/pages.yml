@@ -37,7 +37,7 @@ jobs:
           from pathlib import Path
           p=Path('docs/data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
           assert d.get('format')=='indexed-v1'
-          assert d.get('version')=='0.7.1'
+          assert d.get('version')=='0.7.2'
           assert d.get('validation',{}).get('ok') is True
           assert p.stat().st_size < 6*1024*1024
           assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
