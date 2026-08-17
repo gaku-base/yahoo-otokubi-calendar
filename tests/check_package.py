@@ -1,7 +1,7 @@
 from pathlib import Path
 import json,re
 root=Path(__file__).resolve().parents[1]
-required=['docs/index.html','docs/styles.css','docs/core.js','docs/app.js','docs/sw.js','docs/manifest.webmanifest','docs/icon.svg','scripts/scrape.py','scripts/scrape_v066.py','scripts/compact_client_data.py','.github/workflows/pages.yml','.github/workflows/refresh.yml','.github/workflows/smoke.yml','tests/smoke_pwa.py']
+required=['docs/index.html','docs/styles.css','docs/core.js','docs/app.js','docs/sw.js','docs/manifest.webmanifest','docs/icon.svg','scripts/scrape.py','scripts/scrape_v066.py','scripts/scrape_v071.py','scripts/calendar_campaigns.py','scripts/compact_client_data.py','.github/workflows/pages.yml','.github/workflows/refresh.yml','.github/workflows/smoke.yml','tests/smoke_pwa.py','tests/test_calendar_campaigns.py']
 for f in required: assert (root/f).exists(),f
 html=(root/'docs/index.html').read_text()
 assert html.index('core.js') < html.index('app.js')
@@ -21,4 +21,6 @@ app=(root/'docs/app.js').read_text()
 assert 'Promise.allSettled' in app
 assert 'BONUS+更新失敗（前回データを表示）' in app
 assert 'キャンペーン更新失敗（前回データを表示）' in app
+assert 'rate_label' in app and '単純加算しません' in app
+core=(root/'docs/core.js').read_text();assert 'rate_label' in core and 'is_total' in core
 print('package integrity: PASS')
