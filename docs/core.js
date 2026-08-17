@@ -42,7 +42,9 @@
     const blocksFirstDay=dynamic.some(x=>x.title.includes('プレミアムな日曜日')||x.title.includes('爆買WEEK')||x.title.includes('Brand Week')||x.title.includes('ブランドウィーク'));
     if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',rate:3,rate_label:'+3%',entry_required:true,kind:'fixed'});
     out.push(...dynamic);
-    const seen=new Set();return out.filter(x=>{const k=norm(x.title)+(x.rate_label||'');if(seen.has(k))return false;seen.add(k);return true}).slice(0,6)
+    const merged=[],pos=new Map();
+    for(const x of out){const k=norm(x.title)+(x.rate_label||'');if(!pos.has(k)){pos.set(k,merged.length);merged.push(x);continue}const i=pos.get(k);if(merged[i].kind==='fixed'&&x.kind==='guide')merged[i]=x;}
+    return merged.slice(0,6)
   }
   function fmtRate(r){return Number.isInteger(r)?String(r):String(r).replace(/\.0+$/,'')}
   return {norm,slugFromInput,rowsFor,indexedMatches,matchRows,shopRate,eventsFor,fmtRate};
