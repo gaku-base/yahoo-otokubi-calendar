@@ -7,22 +7,22 @@ spec=importlib.util.spec_from_file_location('scrape_v074',S/'scrape_v074.py');m=
 def opt(text,index=1,disabled=False):return {'text':text,'index':index,'value':str(index),'disabled':disabled}
 
 def test_counted_options_are_not_unparsed():
-    assert not m.meaningful_unparsed_option(opt('家電（123）'))
-    assert not m.meaningful_unparsed_option(opt('食品 (0)'))
+    assert not m.meaningful_unparsed_option(opt('家電（123）')); assert not m.meaningful_unparsed_option(opt('食品 (0)'))
 
 def test_placeholders_without_counts_are_ignored():
-    for s in ('すべて','全て','全カテゴリ','すべてのカテゴリ','カテゴリーを選択','カテゴリを選択','選択してください'):
-        assert not m.meaningful_unparsed_option(opt(s))
+    for s in ('すべて','全て','全カテゴリ','すべてのカテゴリ','カテゴリーを選択','カテゴリを選択','選択してください'):assert not m.meaningful_unparsed_option(opt(s))
 
 def test_real_category_without_count_is_audit_issue_candidate():
-    assert m.meaningful_unparsed_option(opt('家電・AV機器'))
-    assert m.meaningful_unparsed_option(opt('ファッション'))
+    assert m.meaningful_unparsed_option(opt('家電・AV機器')); assert m.meaningful_unparsed_option(opt('ファッション'))
 
-def test_disabled_option_is_ignored():
-    assert not m.meaningful_unparsed_option(opt('家電・AV機器',disabled=True))
+def test_disabled_option_is_ignored():assert not m.meaningful_unparsed_option(opt('家電・AV機器',disabled=True))
 
-def test_source_fails_closed_when_audit_issue_exists():
-    src=(S/'scrape_v074.py').read_text(encoding='utf-8')
-    assert "rec['status']='partial'" in src
-    assert 'could not be audited' in src
-    assert "'category_audit_issues':audit_issues" in src
+def test_multi_rate_conflict_detected_by_slug_or_normalized_name():
+    stores=[{'name':'Shop A','slug':'a','rate':5},{'name':'Shop A','slug':'a','rate':10},{'name':'Shop B','slug':'','rate':5},{'name':'Shop B','slug':'','rate':5}]
+    c=m.multi_rate_conflicts(stores); assert len(c)==1 and c[0]['slug']=='a' and c[0]['rates']==[5.0,10.0]
+
+def test_no_conflict_for_same_rate_across_categories():
+    stores=[{'name':'Shop','slug':'s','rate':5},{'name':'Shop','slug':'s','rate':5}]; assert m.multi_rate_conflicts(stores)==[]
+
+def test_source_fails_closed_when_audit_or_rate_conflict_exists():
+    src=(S/'scrape_v074.py').read_text(encoding='utf-8');assert "rec['status']='partial'" in src;assert 'could not be audited' in src;assert 'conflicting BONUS+ rates' in src;assert "'category_audit_issues':audit_issues" in src;assert "'multi_rate_conflicts':conflicts" in src
