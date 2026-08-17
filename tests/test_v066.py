@@ -1,8 +1,10 @@
-import importlib.util
+import importlib.util, sys
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-spec=importlib.util.spec_from_file_location('scrape_v066',ROOT/'scripts'/'scrape_v066.py')
+SCRIPTS=ROOT/'scripts'
+if str(SCRIPTS) not in sys.path: sys.path.insert(0,str(SCRIPTS))
+spec=importlib.util.spec_from_file_location('scrape_v066',SCRIPTS/'scrape_v066.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 def test_count_tolerance_is_strict_for_small_categories_and_allows_stale_large_counter():
