@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os
+import os,re
 from playwright.sync_api import sync_playwright
 
 URL=os.environ.get('SMOKE_URL','http://127.0.0.1:8000/')
@@ -48,7 +48,8 @@ def main():
         desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo')
         page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_tplink(page)
         cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns")
-        assert '360px' in cols, cols
+        widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)]
+        assert len(widths)==2 and widths[0]>widths[1]>=350,cols
         desktop.close();browser.close()
     print('PWA smoke: PASS (iPhone online/offline + bounded cache + Windows + TP-Link + PNG)')
 
