@@ -1,16 +1,17 @@
-const SHELL_CACHE='otokubi-v068',DATA_CACHE='otokubi-data-v1';
+const SHELL_CACHE='otokubi-v069',DATA_CACHE='otokubi-data-v1';
 const ASSETS=['./','index.html','styles.css','core.js','app.js','manifest.webmanifest','icon.svg'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(SHELL_CACHE);await c.addAll(ASSETS);await self.skipWaiting();})()));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('otokubi-')&&k!==SHELL_CACHE&&k!==DATA_CACHE).map(k=>caches.delete(k)));await self.clients.claim();})()));
+function dataKey(req){const u=new URL(req.url);u.search='';u.hash='';return new Request(u.toString(),{method:'GET'});}
 async function dataResponse(req){
-  const cache=await caches.open(DATA_CACHE);
+  const cache=await caches.open(DATA_CACHE),key=dataKey(req);
   try{
     const res=await fetch(req,{cache:'no-store'});
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    await cache.put(req,res.clone());
+    await cache.put(key,res.clone());
     return res;
   }catch(err){
-    const saved=await cache.match(req,{ignoreSearch:true});
+    const saved=await cache.match(key);
     if(saved)return saved;
     throw err;
   }
