@@ -6,21 +6,41 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: pip install -r requirements.txt
+      - run: node --check docs/core.js && node --check docs/app.js && node --check docs/rank.js && node --check docs/date_rule.js && node --check docs/sw.js
+      - run: python tests/check_package.py
       - run: python -m playwright install --with-deps chromium
-      - name: Map selectors to Yahoo event lists
+      - name: Build local test site
+        run: |
+          mkdir -p docs/data
+          python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
+          cp data/campaigns.json docs/data/campaigns.json
+          cp data/status.json docs/data/status.json
+      - name: Start local site
+        run: |
+          python -m http.server 8000 --directory docs >/tmp/otokubi-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8000/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/otokubi-http.log
+          exit 1
+      - name: Run browser smoke
+        env:
+          SMOKE_URL: http://127.0.0.1:8000/
+        run: python tests/smoke_pwa.py
+      - name: Verify Yahoo exact-date membership behavior
         run: |
           python - <<'PY'
-          import json, asyncio, sys
+          import json,asyncio,sys,re
           from pathlib import Path
           sys.path.insert(0,'scripts')
-          import scrape_v066 as base
           from playwright.async_api import async_playwright
           d=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
           day=next(x for x in d['days'] if x['date']=='2026-08-18')
@@ -29,16 +49,15 @@ jobs:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
                   page=await b.new_page(locale='ja-JP')
                   await page.goto(day['url'],wait_until='domcontentloaded',timeout=60000);await page.wait_for_timeout(700)
-                  n=await page.locator('select').count();print('selects',n)
-                  for i in range(n):
-                      s=page.locator('select').nth(i)
-                      meta=await s.evaluate(r'''s=>({html:s.outerHTML,attrs:Object.fromEntries([...s.attributes].map(a=>[a.name,a.value])),parent:s.parentElement?.outerHTML?.slice(0,1500)||''})''')
-                      opt=await s.locator('option').filter(has_text='キッチン、日用品、文具').first.get_attribute('value')
-                      txt=await s.locator('option').filter(has_text='キッチン、日用品、文具').first.inner_text()
-                      print('SELECT',i,'option',txt,'value',opt,'meta',json.dumps(meta,ensure_ascii=False)[:5000])
-                      await s.select_option(value=opt);await page.wait_for_timeout(900)
-                      lists=await page.evaluate(r'''() => [...document.querySelectorAll('ul[id*="storeList"]')].map(u=>({id:u.id,count:u.querySelectorAll('a.elStoreLink').length,display:getComputedStyle(u).display,rects:u.getClientRects().length,hasTplink:[...u.querySelectorAll('a.elStoreLink')].some(a=>(a.href||'').includes('/tplink/')),first:[...u.querySelectorAll('a.elStoreLink')].slice(0,3).map(a=>(a.innerText||'').trim())}))''')
-                      print('AFTER',i,json.dumps(lists,ensure_ascii=False))
+                  sels=page.locator('select');found=False
+                  for i in range(await sels.count()):
+                      s=sels.nth(i);onchange=await s.get_attribute('onchange') or ''
+                      if 'eventId' not in onchange:continue
+                      opt=s.locator('option').filter(has_text='キッチン、日用品、文具').first
+                      if await opt.count()==0:continue
+                      await s.select_option(value=await opt.get_attribute('value'));await page.wait_for_timeout(700)
+                      if await page.locator('a.elStoreLink[href*="store.shopping.yahoo.co.jp/tplink/"]').count():found=True
+                  assert found,'TP-Link should be recognized when Yahoo lists it in the exact 8/18 event category list'
                   await b.close()
           asyncio.run(main())
           PY
