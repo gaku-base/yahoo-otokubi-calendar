@@ -1,4 +1,10 @@
-from scripts.compact_client_data import compact, validate
+import importlib.util
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+spec=importlib.util.spec_from_file_location('compact_client_data',ROOT/'scripts'/'compact_client_data.py')
+mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+compact,validate=mod.compact,mod.validate
 
 def test_indexed_compaction_deduplicates_and_keeps_max_rate():
     src={
