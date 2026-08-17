@@ -6,7 +6,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,43 +14,27 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
-      - name: Inspect TP-Link date membership and live DOM
+      - name: Trace TP-Link membership source
         run: |
           python - <<'PY'
-          import json, asyncio
+          import json, asyncio, sys
           from pathlib import Path
+          sys.path.insert(0,'scripts')
+          import scrape_v074 as strict
           from playwright.async_api import async_playwright
           d=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
-          cat=d.get('store_catalog',[])
-          ids=[i for i,c in enumerate(cat) if isinstance(c,list) and len(c)>1 and c[1]=='tplink']
-          print('catalog ids',ids)
-          hits=[]
-          for day in d.get('days',[]):
-              for o in day.get('offers',[]):
-                  if o and o[0] in ids:
-                      hits.append((day.get('date'),o[1],day.get('status'),day.get('url')))
-                      break
-          print('tplink hits',len(hits))
-          for x in hits: print(*x[:3])
-          target=next((x for x in hits if x[0]=='2026-08-18'),None)
-          print('target',target)
+          day=next(x for x in d['days'] if x['date']=='2026-08-18')
+          print('stored url',day['url'])
           async def main():
-              if not target:return
               async with async_playwright() as p:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
-                  page=await b.new_page(locale='ja-JP')
-                  await page.goto(target[3],wait_until='domcontentloaded',timeout=60000)
-                  await page.wait_for_timeout(1200)
-                  info=await page.evaluate(r'''() => {
-                    const hs=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6')];
-                    function prevHeading(el){let best=null;for(const h of hs){if(h.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING) best=h;else break}return best?(best.innerText||'').trim():''}
-                    return [...document.querySelectorAll('a')].filter(a=>(a.href||'').includes('store.shopping.yahoo.co.jp/tplink')).map(a=>{
-                      let p=a,path=[];for(let i=0;i<7&&p;i++,p=p.parentElement)path.push(`${p.tagName}.${p.className||''}#${p.id||''}`);
-                      return {text:(a.innerText||a.textContent||'').trim(),href:a.href,visible:!!(a.offsetWidth||a.offsetHeight||a.getClientRects().length),prevHeading:prevHeading(a),path};
-                    });
-                  }''')
-                  print('live tplink anchors',json.dumps(info,ensure_ascii=False,indent=2))
-                  print('select count',await page.locator('select').count())
+                  ctx=await b.new_context(locale='ja-JP',timezone_id='Asia/Tokyo')
+                  page=await ctx.new_page()
+                  rec=await strict.collect_event(page,'2026-08-18',day['url'],day.get('label',''))
+                  hits=[s for s in rec.get('stores',[]) if s.get('slug')=='tplink']
+                  print('fresh status',rec.get('status'),'tplink hits',json.dumps(hits,ensure_ascii=False,indent=2))
+                  print('failures',json.dumps(rec.get('diagnostics',{}).get('failures',[]),ensure_ascii=False)[:4000])
+                  print('sections',json.dumps(rec.get('diagnostics',{}).get('sections',[]),ensure_ascii=False)[:8000])
                   await b.close()
           asyncio.run(main())
           PY
