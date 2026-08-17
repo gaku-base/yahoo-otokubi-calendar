@@ -1,0 +1,17 @@
+const assert=require('assert');const c=require('../docs/core.js');
+assert.equal(c.slugFromInput('https://store.shopping.yahoo.co.jp/tplink/abc.html'),'tplink');
+assert.equal(c.slugFromInput('TP-Link公式ダイレクト'),'');
+const day={status:'ok',stores:[{name:'TP-Link公式ダイレクト',slug:'tplink',rate:5},{name:'TP-Link公式ダイレクト',slug:'tplink',rate:10}]};
+assert.equal(c.shopRate(day,'https://store.shopping.yahoo.co.jp/tplink/').rate,10);
+assert.equal(c.shopRate(day,'TP-Link公式ダイレクト').rate,10);
+assert.equal(c.shopRate(day,'TP-Link').rate,10);
+assert.equal(c.shopRate(day,'不存在').state,'not_found');
+assert.equal(c.shopRate({...day,status:'partial'},'不存在').state,'uncertain');
+assert.equal(c.shopRate(null,'TP-Link').state,'missing');
+const amb={status:'ok',stores:[{name:'ABC公式店',slug:'abc1',rate:5},{name:'ABCアウトレット店',slug:'abc2',rate:10}]};
+assert.equal(c.shopRate(amb,'ABC').state,'ambiguous');
+let ev=c.eventsFor('2026-08-25',{campaigns:[{title:'テスト企画',dates:['2026-08-25']},{title:'テスト企画',dates:['2026-08-25']}]});
+assert.deepEqual(ev.map(x=>x.title),['5のつく日','テスト企画']);
+ev=c.eventsFor('2026-09-01',{campaigns:[]});assert(ev.some(x=>x.title==='ファーストデイ'));
+ev=c.eventsFor('2026-11-01',{campaigns:[{title:'爆買WEEK',dates:['2026-11-01']}]});assert(!ev.some(x=>x.title==='ファーストデイ'));
+console.log('frontend core tests: PASS');
