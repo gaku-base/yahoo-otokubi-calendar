@@ -29,7 +29,7 @@ jobs:
       - run: node tests/test_core.js
       - run: python -m playwright install --with-deps chromium
       - name: Scrape every listed BONUS+ day/category and official point calendar
-        run: python scripts/scrape_v072.py
+        run: python scripts/scrape_v073.py
       - name: Upload full scrape diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,24 +48,26 @@ jobs:
           from pathlib import Path
           p=Path('data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
           c=json.loads(Path('data/campaigns.json').read_text(encoding='utf-8'))
-          assert d.get('version')=='0.7.2'
+          assert d.get('version')=='0.7.3'
           assert d.get('format')=='indexed-v1'
           assert d.get('validation',{}).get('ok') is True
           counts=d['validation'].get('counts',{})
-          assert counts.get('partial')==0 and counts.get('bad')==0, counts
+          assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0, counts
           assert counts.get('days',0)>0 and counts.get('categories',0)>0 and counts.get('stores',0)>0, counts
           assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
           assert len({x['date'] for x in d['days']})==len(d['days'])
-          assert c.get('version')=='0.7.2'
+          assert c.get('version')=='0.7.3'
           assert 'dailybonus/calendar' in (c.get('source') or '')
           assert c.get('validation',{}).get('ok') is True and c.get('campaigns')
           assert not c.get('errors'), c.get('errors')
-          assert not any(any(noise in x.get('title','') for noise in ('クーポン','くじ','抽選','対象商品購入')) for x in c['campaigns'])
+          titles=[x.get('title','') for x in c['campaigns']]
+          assert not any(any(noise in title for noise in ('クーポン','くじ','抽選','対象商品購入')) for title in titles)
+          assert sum('Brand Week' in title or 'ブランドウィーク' in title for title in titles) <= 1, titles
           by={x['date']:x for x in d['days']}; catalog=d['store_catalog']
           if '2026-08-17' in by:
               assert any((catalog[sid][1] if len(catalog[sid])>1 else '')=='tplink' and float(rate)==5 for sid,rate in by['2026-08-17']['offers']), 'TP-Link 2026-08-17 +5% missing while historical day is still listed'
           assert p.stat().st_size < 6*1024*1024
-          print('v0.7.2 client/calendar data: PASS',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False),'campaigns',len(c['campaigns']))
+          print('v0.7.3 fail-closed data: PASS',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False),'campaigns',len(c['campaigns']))
           PY
       - name: Commit refreshed data
         if: success()
