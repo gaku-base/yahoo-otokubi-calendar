@@ -17,7 +17,7 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,7 +29,7 @@ jobs:
       - run: node tests/test_core.js
       - run: python -m playwright install --with-deps chromium
       - name: Scrape every listed BONUS+ day and category
-        run: python scripts/scrape_v062.py
+        run: python scripts/scrape_v066.py
       - name: Upload full scrape diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,19 +48,19 @@ jobs:
           from pathlib import Path
           p=Path('data/bonus.json')
           d=json.loads(p.read_text(encoding='utf-8'))
-          assert d.get('version')=='0.6.4'
+          assert d.get('version')=='0.6.6'
           assert d.get('format')=='indexed-v1'
           assert d.get('validation',{}).get('ok') is True
           assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
-          by={x['date']:x for x in d['days']}
-          catalog=d['store_catalog']
+          assert len({x['date'] for x in d['days']})==len(d['days'])
+          by={x['date']:x for x in d['days']}; catalog=d['store_catalog']
           hit=[]
           for sid,rate in by['2026-08-17']['offers']:
               row=catalog[sid]
               if len(row)>1 and row[1]=='tplink' and float(rate)==5: hit.append((sid,rate))
           assert hit, 'TP-Link 2026-08-17 +5% missing after indexed compaction'
-          assert p.stat().st_size < 8*1024*1024
-          print('indexed client data: PASS', p.stat().st_size, 'catalog',len(catalog),'offers',sum(len(x.get('offers',[])) for x in d['days']))
+          assert p.stat().st_size < 6*1024*1024
+          print('indexed client data: PASS',p.stat().st_size,'catalog',len(catalog),'offers',sum(len(x.get('offers',[])) for x in d['days']))
           PY
       - name: Commit refreshed data
         if: success()
@@ -70,7 +70,5 @@ jobs:
           git add data/bonus.json data/campaigns.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "data: refresh Yahoo Shopping campaigns"
-          # Frontend-only commits can land while the long scrape is running.
-          # Rebase this generated-data commit onto the newest main; never force-push.
           git pull --rebase origin main
           git push origin HEAD:main
