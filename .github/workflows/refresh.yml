@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'scripts/**'
-      - 'tests/**'
       - 'requirements.txt'
       - '.github/workflows/refresh.yml'
   schedule:
@@ -71,4 +70,7 @@ jobs:
           git add data/bonus.json data/campaigns.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "data: refresh Yahoo Shopping campaigns"
-          git push
+          # Frontend-only commits can land while the long scrape is running.
+          # Rebase this generated-data commit onto the newest main; never force-push.
+          git pull --rebase origin main
+          git push origin HEAD:main
