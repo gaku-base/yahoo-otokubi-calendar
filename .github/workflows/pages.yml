@@ -24,27 +24,27 @@ jobs:
       - name: Validate PWA package
         run: python tests/check_package.py
       - name: Validate source JSON files
-        run: python -m json.tool data/bonus.json >/dev/null && python -m json.tool data/campaigns.json >/dev/null
+        run: python -m json.tool data/bonus.json >/dev/null && python -m json.tool data/campaigns.json >/dev/null && python -m json.tool data/status.json >/dev/null
       - name: Build compact client data
         run: |
           mkdir -p docs/data
           python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
           cp data/campaigns.json docs/data/campaigns.json
-      - name: Validate published data budget
+          cp data/status.json docs/data/status.json
+      - name: Validate published data budget and status
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path('docs/data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8'))
-          assert d.get('format')=='indexed-v1'
-          assert d.get('version')=='0.7.5'
+          p=Path('docs/data/bonus.json'); d=json.loads(p.read_text(encoding='utf-8')); s=json.loads(Path('docs/data/status.json').read_text(encoding='utf-8'))
+          assert d.get('format')=='indexed-v1' and d.get('version')=='0.8.0'
           assert d.get('validation',{}).get('ok') is True
           counts=d.get('validation',{}).get('counts',{})
-          assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0, counts
-          assert counts.get('category_audit_issues',0)==0 and counts.get('multi_rate_conflicts',0)==0, counts
-          assert p.stat().st_size < 6*1024*1024
-          assert len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
-          print('Pages v0.7.5 client data: PASS',p.stat().st_size)
+          assert counts.get('partial')==0 and counts.get('bad')==0 and counts.get('count_warnings')==0,counts
+          assert counts.get('category_audit_issues',0)==0 and counts.get('multi_rate_conflicts',0)==0,counts
+          assert p.stat().st_size < 6*1024*1024 and len(d.get('days',[]))>0 and len(d.get('store_catalog',[]))>0
+          assert s.get('version')=='0.8.0' and 'last_attempt_ok' in s
+          print('Pages v0.8.0 client/status: PASS',p.stat().st_size,s.get('last_attempt_ok'))
           PY
       - uses: actions/configure-pages@v5
         with:
