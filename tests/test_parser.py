@@ -28,16 +28,24 @@ def test_static_event_parser_scopes_rates():
     assert rates==[10,5]
     assert {(x['slug'],x['rate']) for x in stores}=={('a',10),('b',5)}
 
-def test_dedupe_prefers_store_slug_and_keeps_different_rates():
-    rows=[{'name':' Test 店 ','url':'https://store.shopping.yahoo.co.jp/test/a','rate':5},{'name':'Test 店','url':'https://store.shopping.yahoo.co.jp/test/b','rate':5},{'name':'Test 店','url':'https://store.shopping.yahoo.co.jp/test/c','rate':10}]
+def test_dedupe_merges_categories_and_keeps_different_rates():
+    rows=[
+      {'name':' Test 店 ','url':'https://store.shopping.yahoo.co.jp/test/a','rate':5,'categories':['家電']},
+      {'name':'Test 店','url':'https://store.shopping.yahoo.co.jp/test/b','rate':5,'categories':['パソコン']},
+      {'name':'Test 店','url':'https://store.shopping.yahoo.co.jp/test/c','rate':10,'categories':['家電']}
+    ]
     got=m.dedupe_stores(rows)
     assert len(got)==2
+    five=[x for x in got if x['rate']==5][0]
+    assert five['categories']==['家電','パソコン']
 
-def test_quality_never_claims_complete_on_failed_categories():
-    stores=[{'name':f's{i}','url':f'https://store.shopping.yahoo.co.jp/s{i}/','rate':5} for i in range(20)]
-    assert m.quality_status(stores,[5],{'options_attempted':3,'options_failed':1})[0]=='partial'
-    assert m.quality_status(stores,[5],{'options_attempted':3,'options_failed':0})[0]=='ok'
-    assert m.quality_status(stores[:2],[5],{'options_attempted':0,'options_failed':0})[0]=='partial'
+def test_quality_requires_every_category_to_succeed():
+    stores=[{'name':f's{i}','url':f'https://store.shopping.yahoo.co.jp/s{i}/','rate':5,'categories':['家電']} for i in range(20)]
+    okdiag={'rate_sections':1,'categories_failed':0,'sections':[{'selects':1,'categories_total':3,'categories_succeeded':3}]}
+    baddiag={'rate_sections':1,'categories_failed':1,'sections':[{'selects':1,'categories_total':3,'categories_succeeded':2}]}
+    assert m.quality_status(stores,[5],okdiag)[0]=='ok'
+    assert m.quality_status(stores,[5],baddiag)[0]=='partial'
+    assert m.quality_status([], [5], okdiag)[0]=='parse_error'
 
 def test_major_campaign_filter():
     assert m.is_major_campaign('プレミアムな日曜日')
@@ -56,10 +64,10 @@ def test_campaign_parser_period_and_filter():
     got=m.parse_campaigns_from_text(text)
     assert len(got)==1 and got[0]['title']=='プレミアムな日曜日' and got[0]['dates']==['2026-08-30']
 
-def test_validation_rejects_empty_and_all_partial():
-    v=m.validate_output({'days':[]},{'campaigns':[],'errors':[]}); assert not v['ok']
-    days=[{'status':'partial'} for _ in range(5)]
-    v=m.validate_output({'days':days},{'campaigns':[],'errors':[]}); assert not v['ok']
+def test_validation_rejects_empty_and_incomplete_day():
+    v=m.validate_output({'days':[],'list_diagnostics':{'event_links':0}},{'campaigns':[],'errors':[]}); assert not v['ok']
+    days=[{'date':'2026-08-17','status':'partial','stores':[],'diagnostics':{'categories_total':2,'categories_succeeded':1}}]
+    v=m.validate_output({'days':days,'list_diagnostics':{'event_links':1}},{'campaigns':[],'errors':[]}); assert not v['ok']
 
 def test_campaign_parser_real_guide_style_august():
     text='''プレミアムな日曜日
@@ -90,8 +98,7 @@ def test_campaign_parser_real_guide_style_august():
     assert 'ヤフショ Brand Weekクーポン' not in by
     assert len(by['ヤフショ Brand Weekポイントキャンペーン']['dates'])==7
 
-def test_known_regression_guard_detects_missing_and_accepts_hit():
-    b={'days':[{'date':'2026-08-17','stores':[]}]}
-    assert m.check_known_regressions(b)
-    b={'days':[{'date':'2026-08-17','stores':[{'slug':'tplink','rate':5}]}]}
-    assert m.check_known_regressions(b)==[]
+def test_known_regression_requires_date_and_hit():
+    assert m.check_known_regressions({'days':[]})
+    b={'days':[{'date':'2026-08-17','stores':[]}]}; assert m.check_known_regressions(b)
+    b={'days':[{'date':'2026-08-17','stores':[{'slug':'tplink','rate':5}]}]}; assert m.check_known_regressions(b)==[]
