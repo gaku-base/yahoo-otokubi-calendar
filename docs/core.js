@@ -34,12 +34,15 @@
   function shopRate(day,shop,catalog){if(!day)return{rate:null,state:'missing'};if(day.status==='partial')return matchRows(day,shop,'partial',catalog);if(day.status!=='ok')return{rate:null,state:'error'};return matchRows(day,shop,'ok',catalog)}
   function eventsFor(iso,campaigns){
     let out=[];const d=new Date(iso+'T00:00:00');
-    if([5,15,25].includes(d.getDate()))out.push({title:'5のつく日',rate:4,kind:'fixed'});
-    const dynamic=[];for(const c of campaigns?.campaigns||[])if((c.dates||[]).includes(iso))dynamic.push({title:c.title,period:c.period,rate:c.rate==null?null:Number(c.rate),kind:'guide'});
-    const blocksFirstDay=dynamic.some(x=>x.title.includes('プレミアムな日曜日')||x.title.includes('爆買WEEK'));
-    if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',rate:3,kind:'fixed'});
+    if([5,15,25].includes(d.getDate()))out.push({title:'5のつく日',rate:4,rate_label:'+4%',entry_required:true,kind:'fixed'});
+    const dynamic=[];for(const c of campaigns?.campaigns||[])if((c.dates||[]).includes(iso))dynamic.push({
+      title:c.title,period:c.period,rate:c.rate==null?null:Number(c.rate),rate_label:c.rate_label||null,is_total:!!c.is_total,is_max:!!c.is_max,
+      conditions:Array.isArray(c.conditions)?c.conditions:[],entry_required:!!c.entry_required,target_store_limited:!!c.target_store_limited,source:c.source||campaigns?.source||null,kind:'guide'
+    });
+    const blocksFirstDay=dynamic.some(x=>x.title.includes('プレミアムな日曜日')||x.title.includes('爆買WEEK')||x.title.includes('Brand Week')||x.title.includes('ブランドウィーク'));
+    if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',rate:3,rate_label:'+3%',entry_required:true,kind:'fixed'});
     out.push(...dynamic);
-    const seen=new Set();return out.filter(x=>{const k=norm(x.title);if(seen.has(k))return false;seen.add(k);return true}).slice(0,5)
+    const seen=new Set();return out.filter(x=>{const k=norm(x.title)+(x.rate_label||'');if(seen.has(k))return false;seen.add(k);return true}).slice(0,6)
   }
   function fmtRate(r){return Number.isInteger(r)?String(r):String(r).replace(/\.0+$/,'')}
   return {norm,slugFromInput,rowsFor,indexedMatches,matchRows,shopRate,eventsFor,fmtRate};
