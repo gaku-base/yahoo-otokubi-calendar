@@ -1,6 +1,13 @@
 name: Refresh Yahoo Shopping data
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/refresh.yml'
   schedule:
     - cron: '18 3,9,15,21 * * *'
 permissions:
@@ -16,6 +23,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt pytest
       - run: pytest -q
+      - run: python tests/check_package.py
       - run: node tests/test_core.js
       - run: python -m playwright install --with-deps chromium
       - name: Scrape and validate Yahoo Shopping
