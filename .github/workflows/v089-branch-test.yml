@@ -2,6 +2,8 @@ name: v0.8.9 branch validation
 on:
   push:
     branches: [chapi-v089-clicked-day-info]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
