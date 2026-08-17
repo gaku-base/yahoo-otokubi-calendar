@@ -14,7 +14,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
-      - name: Trace TP-Link membership source
+      - name: Test visible-only store extraction
         run: |
           python - <<'PY'
           import json, asyncio, sys
@@ -22,19 +22,41 @@ jobs:
           sys.path.insert(0,'scripts')
           import scrape_v074 as strict
           from playwright.async_api import async_playwright
+          base=strict.base
+          async def visible_dom_store_rows(page):
+              rows=await page.evaluate(r'''() => {
+                function visible(el){if(!el)return false;const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'&&el.getClientRects().length>0;}
+                const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,a')];
+                let rate=null; const out=[];
+                for(const el of nodes){
+                  if(!visible(el)) continue;
+                  if(/^H[1-6]$/.test(el.tagName)){
+                    const m=(el.innerText||'').replace(/\s+/g,' ').match(/\+?\s*(\d{1,2}(?:\.\d+)?)\s*%\s*対象ストア/i);
+                    if(m) rate=Number(m[1]);
+                    continue;
+                  }
+                  if(rate===null) continue;
+                  const href=el.href||''; let host=''; try{host=new URL(href).hostname.toLowerCase()}catch(e){}
+                  if(host!=='store.shopping.yahoo.co.jp') continue;
+                  const name=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+                  if(name) out.push({name,url:href,rate});
+                }
+                return out;
+              }''')
+              return base.dedupe([dict(x,slug=base.slug(x.get('url',''))) for x in rows])
+          base.dom_store_rows=visible_dom_store_rows
           d=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'))
-          day=next(x for x in d['days'] if x['date']=='2026-08-18')
-          print('stored url',day['url'])
           async def main():
               async with async_playwright() as p:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
                   ctx=await b.new_context(locale='ja-JP',timezone_id='Asia/Tokyo')
-                  page=await ctx.new_page()
-                  rec=await strict.collect_event(page,'2026-08-18',day['url'],day.get('label',''))
-                  hits=[s for s in rec.get('stores',[]) if s.get('slug')=='tplink']
-                  print('fresh status',rec.get('status'),'tplink hits',json.dumps(hits,ensure_ascii=False,indent=2))
-                  print('failures',json.dumps(rec.get('diagnostics',{}).get('failures',[]),ensure_ascii=False)[:4000])
-                  print('sections',json.dumps(rec.get('diagnostics',{}).get('sections',[]),ensure_ascii=False)[:8000])
+                  for iso in ('2026-08-17','2026-08-18'):
+                      day=next(x for x in d['days'] if x['date']==iso)
+                      page=await ctx.new_page()
+                      rec=await strict.collect_event(page,iso,day['url'],day.get('label',''))
+                      hits=[s for s in rec.get('stores',[]) if s.get('slug')=='tplink']
+                      print(iso,'status',rec.get('status'),'tplink',json.dumps(hits,ensure_ascii=False),'failures',len(rec.get('diagnostics',{}).get('failures',[])),'cats',rec.get('diagnostics',{}).get('categories_succeeded'),rec.get('diagnostics',{}).get('categories_total'))
+                      await page.close()
                   await b.close()
           asyncio.run(main())
           PY
