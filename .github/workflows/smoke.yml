@@ -7,6 +7,7 @@ on:
       - 'docs/**'
       - 'tests/smoke_pwa.py'
       - 'scripts/compact_client_data.py'
+      - 'data/status.json'
       - '.github/workflows/smoke.yml'
 concurrency:
   group: pwa-smoke
@@ -27,6 +28,7 @@ jobs:
           mkdir -p docs/data
           python scripts/compact_client_data.py --input data/bonus.json --output docs/data/bonus.json
           cp data/campaigns.json docs/data/campaigns.json
+          cp data/status.json docs/data/status.json
       - name: Start local site
         run: |
           python -m http.server 8000 --directory docs >/tmp/otokubi-http.log 2>&1 &
