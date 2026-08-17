@@ -1,0 +1,17 @@
+name: Diagnose Joshin Yamada catalog
+on:
+  push:
+    branches: [chapi-diagnose-joshin-yamada]
+    paths:
+      - 'scripts/diagnose_store_search.py'
+      - '.github/workflows/diagnose-stores.yml'
+  workflow_dispatch:
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/diagnose_store_search.py
