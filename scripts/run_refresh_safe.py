@@ -4,7 +4,7 @@ from datetime import datetime,timedelta,timezone
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DIAG=ROOT/'diagnostics';STATUS=DATA/'status.json';JST=timezone(timedelta(hours=9));SCHEMA=1;VERSION='0.8.0'
-DEFAULT_COMMAND=[sys.executable,str(ROOT/'scripts'/'scrape_v075.py')]
+DEFAULT_COMMAND=[sys.executable,str(ROOT/'scripts'/'scrape_v086.py')]
 
 def now_iso():return datetime.now(JST).isoformat()
 def read_json(path,default=None):
