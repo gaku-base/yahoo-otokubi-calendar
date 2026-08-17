@@ -3,7 +3,7 @@
   "version": "0.7.5",
   "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
   "fallback_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-  "updated_at": "2026-08-17T19:01:47.865837+09:00",
+  "updated_at": "2026-08-18T00:44:01.391123+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -12,7 +12,6 @@
       "is_max": false,
       "is_total": false,
       "dates": [
-        "2026-08-18",
         "2026-08-21"
       ],
       "conditions": [
@@ -29,7 +28,6 @@
       "is_max": false,
       "is_total": false,
       "dates": [
-        "2026-08-18",
         "2026-08-21"
       ],
       "conditions": [
@@ -97,6 +95,22 @@
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
       "target_store_limited": true
+    },
+    {
+      "title": "5のつく日",
+      "rate": 4.0,
+      "rate_label": "+4%",
+      "is_max": false,
+      "is_total": false,
+      "dates": [
+        "2026-08-25"
+      ],
+      "conditions": [
+        "要エントリー 指定支払い方法あり 付与上限1,000円相当"
+      ],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "entry_required": true,
+      "target_store_limited": false
     }
   ],
   "errors": [],
@@ -108,12 +122,12 @@
       "ok": 47,
       "partial": 0,
       "bad": 0,
-      "campaigns": 5,
+      "campaigns": 6,
       "stores": 264923,
       "categories": 2350,
       "count_warnings": 0,
-      "campaign_dates": 15,
-      "elapsed_seconds": 255.6,
+      "campaign_dates": 14,
+      "elapsed_seconds": 254.8,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
