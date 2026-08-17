@@ -1,0 +1,46 @@
+name: v075 recovery live benchmark
+on:
+  push:
+    branches: [chapi-v075-recovery]
+    paths:
+      - 'scripts/scrape_v075.py'
+      - 'tests/test_v075.py'
+      - '.github/workflows/v075-live-benchmark.yml'
+concurrency:
+  group: v075-recovery
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - run: pytest -q tests/test_v075.py tests/test_v074.py tests/test_v073.py tests/test_calendar_campaigns.py tests/test_v066.py tests/test_compact.py
+      - run: python -m playwright install --with-deps chromium
+      - name: Run strict scrape with fresh-page recovery
+        run: python scripts/scrape_v075.py
+      - name: Verify complete safe output after recovery
+        run: |
+          python scripts/compact_client_data.py --input data/bonus.json --output /tmp/bonus-client.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          full=json.loads(Path('data/bonus.json').read_text(encoding='utf-8'));v=full['validation'];assert v['ok'],v
+          c=v['counts'];assert c['partial']==0 and c['bad']==0 and c['count_warnings']==0 and c['category_audit_issues']==0 and c['multi_rate_conflicts']==0,c
+          assert c['days']>0 and c['categories']>0 and c['stores']>0,c
+          assert c['recovery_attempts']>=0 and c['recovered_days']>=0,c
+          assert Path('/tmp/bonus-client.json').stat().st_size<6*1024*1024
+          print('v075 recovery benchmark: PASS',json.dumps(c,ensure_ascii=False),'client_bytes',Path('/tmp/bonus-client.json').stat().st_size)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v075-recovery-${{ github.run_id }}
+          path: data/*.json
+          retention-days: 7
