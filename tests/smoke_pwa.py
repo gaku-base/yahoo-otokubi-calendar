@@ -48,8 +48,8 @@ def check_top3_ranking(page):
     page.wait_for_function("document.querySelectorAll('#top3Strip .top3Item').length===3")
     texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '+10%' in texts[0],texts
     assert '2位' in texts[1] and '3日' in texts[1] and '+9%' in texts[1],texts
-    assert '3位' in texts[2] and '4日' in texts[2] and '+7%' in texts[2],texts
-    assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月3日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月4日'
+    assert '3位' in texts[2] and '1日' in texts[2] and '+8%' in texts[2],texts
+    assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月3日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月1日'
     page.locator('#top3Strip .top3Item').first.click();assert '今月のお得度 1位' in page.locator('#detail').inner_text()
 
 def main():
