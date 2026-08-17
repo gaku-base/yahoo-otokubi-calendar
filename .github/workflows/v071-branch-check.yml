@@ -22,29 +22,21 @@ jobs:
           import asyncio, json, sys
           sys.path.insert(0,'scripts')
           from playwright.async_api import async_playwright
-          from calendar_campaigns import collect_calendar,CALENDAR_URL
+          from calendar_campaigns import collect_calendar
           async def main():
               async with async_playwright() as p:
                   b=await p.chromium.launch(headless=True,args=['--no-sandbox'])
                   page=await b.new_page(locale='ja-JP',timezone_id='Asia/Tokyo')
                   got=await collect_calendar(page)
-                  if got['errors']:
-                      await page.goto(CALENDAR_URL,wait_until='domcontentloaded',timeout=45000)
-                      await page.wait_for_timeout(500)
-                      body=await page.locator('body').inner_text()
-                      lines=[x.strip() for x in body.splitlines() if x.strip()]
-                      interesting=[x for x in lines if any(k in x for k in ('おトクカレンダー','つく日','プレミアムな日曜日','ボーナスストアPlusでさらに','優良ストアでさらに','ヤフショ感謝デー','~','〜'))]
-                      print('LIVE_INTERESTING='+json.dumps(interesting[:150],ensure_ascii=False))
-                      print('LIVE_HEAD='+json.dumps(lines[:250],ensure_ascii=False))
                   await b.close()
               print(json.dumps(got,ensure_ascii=False))
               assert not got['errors'],got['errors']
-              rows=got['campaigns']
-              assert rows
-              assert any(c['title']=='5のつく日' and c['rate']==4 for c in rows)
-              assert any('プレミアムな日曜日' in c['title'] and c['rate']==5 for c in rows)
+              rows=got['campaigns']; assert rows
               assert any('ボーナスストアPlusでさらに+2%' in c['title'] and c['rate']==2 for c in rows)
               assert any('優良ストアでさらに+3%' in c['title'] and c['rate']==3 for c in rows)
+              assert any('プレミアムな日曜日' in c['title'] and c['rate']==5 for c in rows)
+              assert any('ヤフショ感謝デー' in c['title'] and c['rate']==5 and c.get('is_max') for c in rows)
+              assert any('Brand Week' in c['title'] and c.get('rate_label')=='最大25%' and c.get('is_total') for c in rows)
               assert not any('クーポン' in c['title'] or 'くじ' in c['title'] for c in rows)
           asyncio.run(main())
           PY
