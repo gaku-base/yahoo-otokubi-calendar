@@ -10,7 +10,7 @@ TITLE_EXCLUDES=('クーポン','くじ','抽選','OFF','値引','ギフトで贈
 DETAIL_PREFIXES=('注文','要エントリー','対象','付与上限','先着順','利用下限','指定支払い','条件')
 
 def clean(s:str)->str:return re.sub(r'\s+',' ',s or '').strip()
-def norm(s:str)->str:return re.sub(r'[\s\-_・･/／]+/g','',unicodedata.normalize('NFKC',s or '').lower()) if False else re.sub(r'[\s\-_・･/／]+','',unicodedata.normalize('NFKC',s or '').lower())
+def norm(s:str)->str:return re.sub(r'[\s\-_・･/／]+','',unicodedata.normalize('NFKC',s or '').lower())
 
 def infer_year(month:int,day:int,reference:date|None=None)->int:
     ref=reference or datetime.now(JST).date();choices=[]
@@ -44,7 +44,7 @@ def parse_rate(line:str):
     s=unicodedata.normalize('NFKC',clean(line)).replace('％','%')
     m=re.fullmatch(r'(最大\s*)?\+\s*(\d{1,2}(?:\.\d+)?)\s*%',s,re.I)
     if not m:return None
-    return {'rate':float(m.group(2)),'is_max':bool(m.group(1)),'rate_label':s.replace(' ','_').replace('_','') ,'is_total':False}
+    return {'rate':float(m.group(2)),'is_max':bool(m.group(1)),'rate_label':s.replace(' ',''),'is_total':False}
 
 def parse_total_rate(line:str):
     s=unicodedata.normalize('NFKC',clean(line)).replace('％','%')
@@ -93,9 +93,7 @@ def parse_period_campaigns(lines,start_index:int,reference:date,groups):
         if lines[i+1] not in ('〜','～','~','-'):i+=1;continue
         m2=re.fullmatch(r'(\d{1,2})\s*[（(][月火水木金土日](?:曜)?[）)]',lines[i+2])
         if not m2:i+=1;continue
-        start=next_occurrence(int(m1.group(1)),base)
-        end=next_occurrence(int(m2.group(1)),start or base)
-        title=lines[i+3];r=parse_rate(lines[i+4]) or parse_total_rate(lines[i+4])
+        start=next_occurrence(int(m1.group(1)),base);end=next_occurrence(int(m2.group(1)),start or base);title=lines[i+3];r=parse_rate(lines[i+4]) or parse_total_rate(lines[i+4])
         if start and end and end>=start and (end-start).days<=31 and r and looks_like_title(title):
             detail=lines[i+5] if i+5<len(lines) and not lines[i+5].startswith(FINAL_STOP) else ''
             d=start
@@ -133,18 +131,18 @@ def parse_calendar_text(text:str,reference:date|None=None):
     out=list(groups.values())
     for c in out:
         c['dates'].sort();joined=' '.join(c.get('conditions',[]));c['entry_required']='要エントリー' in joined;c['target_store_limited']='対象ストア限定' in joined
-    out.sort(key=lambda c:(c['dates'][0] if c['dates'] else '9999',c['title']))
-    return out
+    out.sort(key=lambda c:(c['dates'][0] if c['dates'] else '9999',c['title']));return out
 
 def merge_safe_guide(calendar_campaigns:list[dict],guide:dict):
+    # The official daily-bonus calendar is authoritative for Brand/爆買 campaigns,
+    # because guide titles can describe a total maximum without enough information
+    # to safely turn it into an additive percentage. Guide fallback is therefore
+    # limited to campaigns with a known additive interpretation.
     out=[dict(c) for c in calendar_campaigns];index={(norm(c['title']),c.get('rate'),c.get('rate_label')):c for c in out}
     for c in guide.get('campaigns',[]):
         title=clean(c.get('title',''));rate=None;is_max=False;rate_label=None
         if 'プレミアムな日曜日' in title:rate=5.0;rate_label='+5%'
         elif 'ヤフショ感謝デー' in title:rate=5.0;is_max=True;rate_label='最大+5%'
-        elif '爆買WEEK' in title or 'Brand Week' in title or 'ブランドウィーク' in title:
-            m=re.search(r'(最大\s*)?[+＋]\s*(\d+(?:\.\d+)?)\s*[%％]',title)
-            if m:rate=float(m.group(2));is_max=bool(m.group(1));rate_label=('最大' if is_max else '')+f'+{rate:g}%'
         else:continue
         key=(norm(title),rate,rate_label);row=index.get(key)
         if row is None:
@@ -152,8 +150,7 @@ def merge_safe_guide(calendar_campaigns:list[dict],guide:dict):
         for iso in c.get('dates',[]):
             if iso not in row['dates']:row['dates'].append(iso)
         row['dates'].sort()
-    out=[c for c in out if c.get('dates')];out.sort(key=lambda c:(c['dates'][0],c['title']))
-    return out
+    out=[c for c in out if c.get('dates')];out.sort(key=lambda c:(c['dates'][0],c['title']));return out
 
 async def collect_calendar(page,reference:date|None=None):
     result={'source':CALENDAR_URL,'campaigns':[],'errors':[]}
