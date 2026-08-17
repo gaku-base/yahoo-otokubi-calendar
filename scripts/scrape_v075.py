@@ -10,36 +10,45 @@ import scrape_v074 as strict
 from calendar_campaigns import collect_calendar,merge_safe_guide
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DATA.mkdir(exist_ok=True)
-JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2
+JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2;REQUIRED_CLEAN_CONFIRMATIONS=2
 
-def needs_recovery(rec):
-    return rec.get('status')!='ok'
+def needs_recovery(rec):return rec.get('status')!='ok'
 
 def recovery_score(rec):
     dg=rec.get('diagnostics',{});failed=int(dg.get('categories_failed',0) or 0);audit=len(dg.get('category_option_audit',{}).get('issues',[]) or []);conf=len(dg.get('multi_rate_conflicts',[]) or [])
     status_rank={'ok':3,'partial':2,'parse_error':1,'fetch_error':0}.get(rec.get('status'),0)
     return (status_rank,-failed,-audit,-conf,int(dg.get('categories_succeeded',0) or 0),int(dg.get('stores_total',0) or 0))
 
-def choose_better(a,b):
-    return b if recovery_score(b)>recovery_score(a) else a
+def choose_better(a,b):return b if recovery_score(b)>recovery_score(a) else a
+
+def clean_confirmation(rec):
+    dg=rec.get('diagnostics',{})
+    return rec.get('status')=='ok' and not dg.get('categories_failed',0) and not dg.get('count_warnings') and not dg.get('category_option_audit',{}).get('issues') and not dg.get('multi_rate_conflicts')
 
 async def retry_event(context,original,attempts=RECOVERY_ATTEMPTS):
-    best=original;history=[]
+    best=original;history=[];clean=[]
     for n in range(1,attempts+1):
         p=await context.new_page()
-        try:
-            rec=await strict.collect_event(p,original.get('date'),original.get('url'),original.get('label'))
-        finally:
-            strict._AUDIT.pop(id(p),None);state073._LAST_ACCEPTED.pop(id(p),None);await p.close()
-        history.append({'attempt':n,'status':rec.get('status'),'error':rec.get('error'),'categories_failed':rec.get('diagnostics',{}).get('categories_failed',0),'stores_total':rec.get('diagnostics',{}).get('stores_total',0)})
+        try:rec=await strict.collect_event(p,original.get('date'),original.get('url'),original.get('label'))
+        finally:strict._AUDIT.pop(id(p),None);state073._LAST_ACCEPTED.pop(id(p),None);await p.close()
+        ok=clean_confirmation(rec)
+        history.append({'attempt':n,'status':rec.get('status'),'clean':ok,'error':rec.get('error'),'categories_failed':rec.get('diagnostics',{}).get('categories_failed',0),'stores_total':rec.get('diagnostics',{}).get('stores_total',0)})
         best=choose_better(best,rec)
-        if rec.get('status')=='ok':best=rec;break
-    dg=best.setdefault('diagnostics',{});dg['recovery']={'initial_status':original.get('status'),'attempts':history,'recovered':best.get('status')=='ok'}
+        if ok:clean.append(rec)
+    confirmed=len(clean)>=REQUIRED_CLEAN_CONFIRMATIONS
+    if confirmed:
+        best=clean[-1]
+    else:
+        # A single clean retry after an incomplete pass is not enough to publish a
+        # hard not-found result. Keep the best diagnostics but force uncertainty.
+        if best.get('status')=='ok':
+            best=dict(best);best['diagnostics']=dict(best.get('diagnostics',{}));best['status']='partial';best['error']='recovery produced fewer than two clean confirmations; refusing hard not-found decisions'
+    dg=best.setdefault('diagnostics',{});dg['recovery']={'initial_status':original.get('status'),'attempts':history,'clean_confirmations':len(clean),'required_clean_confirmations':REQUIRED_CLEAN_CONFIRMATIONS,'recovered':confirmed}
     return best
 
 async def collect_bonus_with_recovery(page):
     out=await strict.collect_bonus(page);bad=[d for d in out.get('days',[]) if needs_recovery(d)]
-    out.setdefault('list_diagnostics',{})['recovery_candidates']=len(bad);out['list_diagnostics']['recovery_attempt_limit']=RECOVERY_ATTEMPTS
+    out.setdefault('list_diagnostics',{})['recovery_candidates']=len(bad);out['list_diagnostics']['recovery_attempt_limit']=RECOVERY_ATTEMPTS;out['list_diagnostics']['required_clean_confirmations']=REQUIRED_CLEAN_CONFIRMATIONS
     if not bad:return out
     sem=asyncio.Semaphore(2);bydate={d.get('date'):d for d in out['days']}
     async def one(rec):
@@ -47,8 +56,7 @@ async def collect_bonus_with_recovery(page):
     recovered=await asyncio.gather(*(one(r) for r in bad))
     for r in recovered:bydate[r.get('date')]=r
     out['days']=[bydate[d.get('date')] for d in out['days']]
-    out['list_diagnostics']['recovered_days']=sum(d.get('diagnostics',{}).get('recovery',{}).get('recovered') for d in out['days'])
-    out['list_diagnostics']['remaining_incomplete']=sum(d.get('status')!='ok' for d in out['days'])
+    out['list_diagnostics']['recovered_days']=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in out['days']);out['list_diagnostics']['remaining_incomplete']=sum(d.get('status')!='ok' for d in out['days'])
     return out
 
 def validate_campaigns(campaigns):
@@ -71,8 +79,7 @@ async def main():
     audit_issues=sum(len(d.get('diagnostics',{}).get('category_option_audit',{}).get('issues',[])) for d in bonus.get('days',[]));conflicts=sum(len(d.get('diagnostics',{}).get('multi_rate_conflicts',[])) for d in bonus.get('days',[]))
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
     if conflicts:issues.append(f'Multi-rate store conflicts: {conflicts}')
-    recovered=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in bonus.get('days',[]))
-    recovery_attempts=sum(len(d.get('diagnostics',{}).get('recovery',{}).get('attempts',[])) for d in bonus.get('days',[]))
+    recovered=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in bonus.get('days',[]));recovery_attempts=sum(len(d.get('diagnostics',{}).get('recovery',{}).get('attempts',[])) for d in bonus.get('days',[]))
     counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
     validation={'ok':not issues,'issues':issues[:50],'counts':counts};bonus['version']=VERSION;bonus['schema']=SCHEMA;bonus['validation']=validation;campaigns['validation']=validation
     (DATA/'bonus.json').write_text(json.dumps(bonus,ensure_ascii=False,indent=2),encoding='utf-8');(DATA/'campaigns.json').write_text(json.dumps(campaigns,ensure_ascii=False,indent=2),encoding='utf-8')
