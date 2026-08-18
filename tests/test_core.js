@@ -13,4 +13,5 @@ assert.equal(ev[0].title,'5のつく日');assert.equal(ev[0].rate,4);assert.equa
 ev=c.eventsFor('2026-08-22',{campaigns:[{title:'ヤフショ感謝デー',dates:['2026-08-22'],rate:5,rate_label:'最大+5%',is_max:true}]});assert.equal(ev[0].rate_label,'最大+5%');assert.equal(ev[0].is_max,true);
 ev=c.eventsFor('2026-09-01',{campaigns:[]});const fd=ev.find(x=>x.title==='ファーストデイ');assert(fd);assert.equal(fd.rate,3);assert.equal(fd.rate_label,'+3%');
 ev=c.eventsFor('2026-11-01',{campaigns:[{title:'Brand Week',dates:['2026-11-01'],rate_label:'最大25%',is_total:true}]});assert(!ev.some(x=>x.title==='ファーストデイ'));
+assert.deepEqual(c.bonusCapInfo(10,{}),{known:true,cap:10000,source:'legacy'});assert.deepEqual(c.bonusCapInfo(5,{}),{known:true,cap:5000,source:'legacy'});assert.deepEqual(c.bonusCapInfo(9,{}),{known:false,cap:null,source:'unknown'});assert.deepEqual(c.bonusCapInfo(4,{}),{known:false,cap:null,source:'unknown'});assert.deepEqual(c.bonusCapInfo(9,{rate_caps:{'9':12000}}),{known:true,cap:12000,source:'official'});assert.deepEqual(c.bonusCapInfo(4,{rate_caps:{'4':4500}}),{known:true,cap:4500,source:'official'});
 console.log('frontend core tests: PASS');
