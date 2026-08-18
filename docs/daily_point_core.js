@@ -38,12 +38,12 @@ function campaignDecision(e,srState,settings={},gross=0,iso=''){
   return {state:'unknown',rate:num(e.rate),reason:'対象ストア判定を自動確定できない',rule};
 }
 function eventPoints(e,srState,settings,gross,target,iso){const d=campaignDecision(e,srState,settings,gross,iso);if(d.state!=='eligible'||!d.rate)return {...d,points:0};return {...d,points:pointsFor(d.rate,target,d.rule?.cap??Infinity)}}
-function compareRows(rows,mode='points'){
-  const exact=rows.filter(r=>mode==='points'?r.pointExact:r.rateExact),uncertain=rows.filter(r=>!(mode==='points'?r.pointExact:r.rateExact)&&r.hasPotential!==false),key=mode==='points'?'addPoints':'addRate';
-  const vals=exact.map(r=>Number(r[key])||0),baseline=vals.length?Math.min(...vals):0,max=vals.length?Math.max(...vals):0;
-  const ranked=exact.filter(r=>(Number(r[key])||0)>baseline).map(r=>({...r,comparisonDelta:(Number(r[key])||0)-baseline}));
+function compareRows(rows,mode='points',options={}){
+  const exact=rows.filter(r=>mode==='points'?r.pointExact:r.rateExact),uncertain=rows.filter(r=>!(mode==='points'?r.pointExact:r.rateExact)&&r.hasPotential!==false),key=mode==='points'?'addPoints':'addRate',unknownAsZero=options.unknownAsZero===true,comparable=unknownAsZero?[...exact,...uncertain]:exact;
+  const vals=comparable.map(r=>Number(r[key])||0),baseline=vals.length?Math.min(...vals):0,max=vals.length?Math.max(...vals):0;
+  const ranked=comparable.filter(r=>(Number(r[key])||0)>baseline).map(r=>({...r,comparisonDelta:(Number(r[key])||0)-baseline,unknownCountedAsZero:unknownAsZero&&uncertain.includes(r)}));
   ranked.sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0)||(Number(b.addRate)||0)-(Number(a.addRate)||0)||a.day-b.day);ranked.forEach((r,i)=>r.rank=i+1);
-  return {mode,exact,uncertain,baseline,max,ranked,hasDifference:max>baseline};
+  return {mode,exact,uncertain,comparable,baseline,max,ranked,hasDifference:max>baseline,unknownAsZero};
 }
 return {pointsFor,conditionMoneyRule,campaignMoneyRule,campaignDecision,eventPoints,compareRows};
 });
