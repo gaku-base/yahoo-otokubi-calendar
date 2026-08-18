@@ -1,0 +1,39 @@
+name: Validate changes
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'docs/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/**'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Compile Python sources
+        run: python -m compileall -q scripts tests
+      - name: Run Python tests
+        run: pytest -q
+      - name: Validate package
+        run: python tests/check_package.py
+      - name: Validate frontend JavaScript
+        run: |
+          node --check docs/core.js
+          node --check docs/app.js
+          node --check docs/rank.js
+          node --check docs/manual_refresh.js
+          node --check docs/calc_assumptions.js
+          node --check docs/sunday_start.js
+          node --check docs/sw.js
+          node tests/test_core.js
