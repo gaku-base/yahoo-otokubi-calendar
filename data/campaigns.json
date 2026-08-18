@@ -4,7 +4,7 @@
   "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
   "fallback_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-  "updated_at": "2026-08-18T18:54:06.692391+09:00",
+  "updated_at": "2026-08-19T00:52:05.484990+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -257,12 +257,12 @@
       "informational_campaigns": 3,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 284.0,
+      "elapsed_seconds": 258.3,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
-      "recovered_days": 1,
-      "recovery_attempts": 2
+      "recovered_days": 0,
+      "recovery_attempts": 0
     }
   }
 }
