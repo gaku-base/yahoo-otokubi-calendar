@@ -9,6 +9,7 @@ import scrape_v073 as state073
 import scrape_v074 as strict
 from calendar_campaigns import collect_calendar,merge_safe_guide
 from campaign_meta import enrich_campaign_rows
+from guide_campaigns import collect_target_guide,merge_target_guide
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DATA.mkdir(exist_ok=True)
 JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2;REQUIRED_CLEAN_CONFIRMATIONS=2
@@ -37,11 +38,9 @@ async def retry_event(context,original,attempts=RECOVERY_ATTEMPTS):
         best=choose_better(best,rec)
         if ok:clean.append(rec)
     confirmed=len(clean)>=REQUIRED_CLEAN_CONFIRMATIONS
-    if confirmed:
-        best=clean[-1]
-    else:
-        if best.get('status')=='ok':
-            best=dict(best);best['diagnostics']=dict(best.get('diagnostics',{}));best['status']='partial';best['error']='recovery produced fewer than two clean confirmations; refusing hard not-found decisions'
+    if confirmed:best=clean[-1]
+    elif best.get('status')=='ok':
+        best=dict(best);best['diagnostics']=dict(best.get('diagnostics',{}));best['status']='partial';best['error']='recovery produced fewer than two clean confirmations; refusing hard not-found decisions'
     dg=best.setdefault('diagnostics',{});dg['recovery']={'initial_status':original.get('status'),'attempts':history,'clean_confirmations':len(clean),'required_clean_confirmations':REQUIRED_CLEAN_CONFIRMATIONS,'recovered':confirmed}
     return best
 
@@ -61,11 +60,14 @@ async def collect_bonus_with_recovery(page):
 def validate_campaigns(campaigns):
     issues=[];rows=campaigns.get('campaigns',[])
     if not rows:issues.append('Official bonus calendar produced no campaigns')
+    if campaigns.get('errors'):issues.append('Official campaign source reported errors')
     if any(any(x in c.get('title','') for x in ('クーポン','対象商品購入')) for c in rows):issues.append('Noisy campaign leaked into calendar')
     if not any(c.get('dates') for c in rows):issues.append('Campaign calendar has no dates')
     for c in rows:
         if c.get('target_store_limited') and not c.get('eligibility_mode'):issues.append(f"Target-store campaign lacks eligibility mode: {c.get('title')}")
         if c.get('informational') and c.get('calculation_mode') not in ('lottery','total_max','display_only'):issues.append(f"Informational campaign has unsafe calculation mode: {c.get('title')}")
+    for marker in ('ボーナスストアPlusでさらに+2','優良ストア'):
+        if not any(marker in str(c.get('title') or '') for c in rows):issues.append(f'Missing Yahoo guide campaign schedule: {marker}')
     return issues
 
 async def main():
@@ -75,9 +77,11 @@ async def main():
         ctx=await browser.new_context(locale='ja-JP',timezone_id='Asia/Tokyo',user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139 Safari/537.36')
         page=await ctx.new_page();bonus=await collect_bonus_with_recovery(page)
         cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close();raw_guide=await legacy.collect_guide(browser)
-        rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide)
+        target_page=await ctx.new_page();target_guide=await collect_target_guide(target_page);await target_page.close()
+        rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide);rows=merge_target_guide(rows,target_guide.get('campaigns',[]))
         meta_page=await ctx.new_page();rows,campaign_meta_diag=await enrich_campaign_rows(meta_page,rows);await meta_page.close();await browser.close()
-    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':calendar.get('errors',[]),'metadata_diagnostics':campaign_meta_diag}
+    errors=list(calendar.get('errors',[]))+list(target_guide.get('errors',[]))
+    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'schedule_source':target_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':errors,'metadata_diagnostics':campaign_meta_diag}
     base_validation=validator.validate(bonus,campaigns);issues=list(base_validation.get('issues',[]))+validate_campaigns(campaigns)
     audit_issues=sum(len(d.get('diagnostics',{}).get('category_option_audit',{}).get('issues',[])) for d in bonus.get('days',[]));conflicts=sum(len(d.get('diagnostics',{}).get('multi_rate_conflicts',[])) for d in bonus.get('days',[]))
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
