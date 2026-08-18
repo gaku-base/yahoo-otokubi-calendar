@@ -8,6 +8,7 @@ import scrape_v066 as validator
 import scrape_v073 as state073
 import scrape_v074 as strict
 from calendar_campaigns import collect_calendar,merge_safe_guide
+from campaign_meta import enrich_campaign_rows
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DATA.mkdir(exist_ok=True)
 JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2;REQUIRED_CLEAN_CONFIRMATIONS=2
@@ -39,8 +40,6 @@ async def retry_event(context,original,attempts=RECOVERY_ATTEMPTS):
     if confirmed:
         best=clean[-1]
     else:
-        # A single clean retry after an incomplete pass is not enough to publish a
-        # hard not-found result. Keep the best diagnostics but force uncertainty.
         if best.get('status')=='ok':
             best=dict(best);best['diagnostics']=dict(best.get('diagnostics',{}));best['status']='partial';best['error']='recovery produced fewer than two clean confirmations; refusing hard not-found decisions'
     dg=best.setdefault('diagnostics',{});dg['recovery']={'initial_status':original.get('status'),'attempts':history,'clean_confirmations':len(clean),'required_clean_confirmations':REQUIRED_CLEAN_CONFIRMATIONS,'recovered':confirmed}
@@ -61,26 +60,30 @@ async def collect_bonus_with_recovery(page):
 
 def validate_campaigns(campaigns):
     issues=[];rows=campaigns.get('campaigns',[])
-    if not rows:issues.append('Official bonus calendar produced no point campaigns')
-    if any(any(x in c.get('title','') for x in ('クーポン','くじ','抽選','対象商品購入')) for c in rows):issues.append('Noisy campaign leaked into calendar')
+    if not rows:issues.append('Official bonus calendar produced no campaigns')
+    if any(any(x in c.get('title','') for x in ('クーポン','対象商品購入')) for c in rows):issues.append('Noisy campaign leaked into calendar')
     if not any(c.get('dates') for c in rows):issues.append('Campaign calendar has no dates')
+    for c in rows:
+        if c.get('target_store_limited') and not c.get('eligibility_mode'):issues.append(f"Target-store campaign lacks eligibility mode: {c.get('title')}")
+        if c.get('informational') and c.get('calculation_mode') not in ('lottery','total_max','display_only'):issues.append(f"Informational campaign has unsafe calculation mode: {c.get('title')}")
     return issues
 
 async def main():
-    started=time.monotonic()
+    started=time.monotonic();campaign_meta_diag={}
     async with async_playwright() as p:
         browser=await p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
         ctx=await browser.new_context(locale='ja-JP',timezone_id='Asia/Tokyo',user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139 Safari/537.36')
         page=await ctx.new_page();bonus=await collect_bonus_with_recovery(page)
-        cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close();raw_guide=await legacy.collect_guide(browser);await browser.close()
-    rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide)
-    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':calendar.get('errors',[])}
+        cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close();raw_guide=await legacy.collect_guide(browser)
+        rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide)
+        meta_page=await ctx.new_page();rows,campaign_meta_diag=await enrich_campaign_rows(meta_page,rows);await meta_page.close();await browser.close()
+    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':calendar.get('errors',[]),'metadata_diagnostics':campaign_meta_diag}
     base_validation=validator.validate(bonus,campaigns);issues=list(base_validation.get('issues',[]))+validate_campaigns(campaigns)
     audit_issues=sum(len(d.get('diagnostics',{}).get('category_option_audit',{}).get('issues',[])) for d in bonus.get('days',[]));conflicts=sum(len(d.get('diagnostics',{}).get('multi_rate_conflicts',[])) for d in bonus.get('days',[]))
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
     if conflicts:issues.append(f'Multi-rate store conflicts: {conflicts}')
     recovered=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in bonus.get('days',[]));recovery_attempts=sum(len(d.get('diagnostics',{}).get('recovery',{}).get('attempts',[])) for d in bonus.get('days',[]))
-    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
+    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'informational_campaigns':sum(bool(c.get('informational')) for c in rows),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
     validation={'ok':not issues,'issues':issues[:50],'counts':counts};bonus['version']=VERSION;bonus['schema']=SCHEMA;bonus['validation']=validation;campaigns['validation']=validation
     (DATA/'bonus.json').write_text(json.dumps(bonus,ensure_ascii=False,indent=2),encoding='utf-8');(DATA/'campaigns.json').write_text(json.dumps(campaigns,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(validation,ensure_ascii=False))
