@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const RANKS=[{label:'1位',cls:'rank1'},{label:'2位',cls:'rank2'},{label:'3位',cls:'rank3'}];
-const BASE_PROFILE=Object.freeze({nominalRate:7,storeRate:1,lineRate:3,lypRate:2,paypayRate:1,lineCap:5000,lypCap:5000,taxRate:.10});
+const BASE_PROFILE=Object.freeze({nominalRate:7,storeRate:1,lineRate:3,lypRate:2,paypayRate:1,lineCap:5000,lypCap:5000,taxRate:.10,rank:'gold'});
 function isoForDay(y,m,n){return `${y}-${String(m+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`}
 function purchaseAmount(){const el=document.querySelector('#purchaseAmount'),n=Number(el?.value||0);return Number.isFinite(n)&&n>0?n:0}
 function targetAmount(amount){return amount>0?Math.floor(amount/(1+BASE_PROFILE.taxRate)):0}
@@ -11,15 +11,17 @@ function basePointInfo(amount){
   const target=targetAmount(amount),store=pointsFor(BASE_PROFILE.storeRate,target),line=pointsFor(BASE_PROFILE.lineRate,target,0,BASE_PROFILE.lineCap),lyp=pointsFor(BASE_PROFILE.lypRate,target,0,BASE_PROFILE.lypCap),paypay=Math.floor(amount/200)*2;
   return {points:store+line+lyp+paypay,target,nominalRate:BASE_PROFILE.nominalRate,store,line,lyp,paypay};
 }
-function campaignAddRate(e){if(!e||e.is_total||e.is_max||e.target_store_limited)return 0;const title=String(e.title||'');if(title.includes('ボーナスストアPlus'))return 0;const n=Number(e.rate);return Number.isFinite(n)&&n>0?n:0}
+function campaignState(e,iso,rec,shop){return OtokubiCore.campaignShopState(e,iso,shop,rec,bonus.store_catalog)}
+function campaignResolvedRate(e){return OtokubiCore.campaignEffectiveRate(e,BASE_PROFILE)}
+function campaignAddRate(e,iso,rec,shop){if(!e||e.informational||e.is_total||e.calculation_mode==='lottery'||e.calculation_mode==='total_max')return 0;if(campaignState(e,iso,rec,shop).state!=='eligible')return 0;const n=campaignResolvedRate(e);return Number.isFinite(n)&&n>0?n:0}
 function conditionMoneyRule(e){const text=(Array.isArray(e?.conditions)?e.conditions:[]).join(' ');const minMatch=text.match(/(?:注文|決済|合計)[^0-9]{0,12}([0-9,]+)\s*円\s*(?:～|〜|以上)/);const capMatch=text.match(/付与上限\s*([0-9,]+)\s*円(?:相当)?/);return {min:minMatch?Number(minMatch[1].replaceAll(',','')):0,cap:capMatch?Number(capMatch[1].replaceAll(',','')):Infinity}}
 function campaignMoneyRule(e,iso){const title=String(e?.title||'');if(title.includes('5のつく日'))return {min:0,cap:iso>='2026-09-05'?2000:1000};if(title.includes('ファーストデイ'))return {min:3000,cap:2000};return conditionMoneyRule(e)}
-function bonusCap(rate){const r=Number(rate);if(r===10)return 10000;if(r===5)return 5000;return Infinity}
-function campaignPoints(e,gross,target,iso){if(!e||e.is_total||e.is_max||e.target_store_limited)return 0;const title=String(e.title||'');if(title.includes('ボーナスストアPlus'))return 0;const r=Number(e.rate);if(!Number.isFinite(r)||r<=0)return 0;const rule=campaignMoneyRule(e,iso);if(gross<rule.min)return 0;return pointsFor(r,target,0,rule.cap)}
+function bonusCap(rate,iso=''){const r=Number(rate);if(r===10)return 10000;if(r===5)return 5000;if(iso>='2026-09-01'&&r===9)return 10000;if(iso>='2026-09-01'&&r===4)return 5000;return Infinity}
+function campaignPoints(e,gross,target,iso,rec,shop){if(!e||e.informational||e.is_total||e.calculation_mode==='lottery'||e.calculation_mode==='total_max')return 0;if(campaignState(e,iso,rec,shop).state!=='eligible')return 0;const r=campaignResolvedRate(e);if(!Number.isFinite(r)||r<=0)return 0;const rule=campaignMoneyRule(e,iso);if(gross<rule.min)return 0;return pointsFor(r,target,0,rule.cap)}
 function scoreDay(iso,day,shop,amount){
   const rec=(bonus.days||[]).find(d=>d.date===iso),sr=srFor(rec,shop),ev=eventsFor(iso),base=basePointInfo(amount),target=base.target||targetAmount(amount);
-  const bonusRate=sr.state==='match'?Number(sr.rate)||0:0,campaignRate=ev.reduce((sum,e)=>sum+campaignAddRate(e),0),addRate=bonusRate+campaignRate,totalRate=BASE_PROFILE.nominalRate+addRate;
-  const bonusPoints=amount&&sr.state==='match'?pointsFor(bonusRate,target,0,bonusCap(bonusRate)):0,extraPoints=amount?ev.reduce((sum,e)=>sum+campaignPoints(e,amount,target,iso),0):0,addPoints=bonusPoints+extraPoints,totalPoints=base.points+addPoints;
+  const bonusRate=sr.state==='match'?Number(sr.rate)||0:0,campaignRate=ev.reduce((sum,e)=>sum+campaignAddRate(e,iso,rec,shop),0),addRate=bonusRate+campaignRate,totalRate=BASE_PROFILE.nominalRate+addRate;
+  const bonusPoints=amount&&sr.state==='match'?pointsFor(bonusRate,target,0,bonusCap(bonusRate,iso)):0,extraPoints=amount?ev.reduce((sum,e)=>sum+campaignPoints(e,amount,target,iso,rec,shop),0):0,addPoints=bonusPoints+extraPoints,totalPoints=base.points+addPoints;
   const rankScore=amount?addPoints:addRate,score=amount?totalPoints:totalRate;
   return {iso,day,score,rankScore,points:totalPoints,totalPoints,addPoints,basePoints:base.points,base,amount,target,rateScore:totalRate,addRate,effectiveRate:amount?totalPoints/amount*100:totalRate,bonusRate,campaignRate,bonusPoints,extraPoints,eventCount:ev.length};
 }
@@ -42,12 +44,13 @@ const originalShowDetail=showDetail;showDetail=function(iso,rec,sr,ev){
   originalShowDetail(iso,rec,sr,ev);const row=clickedDayInfo(iso),d=document.querySelector('#detail h3');if(!row||!d)return;let html='';
   if(row.rank){if(row.rank<=3){const cfg=RANKS[row.rank-1];html+=`<div class="detailRank ${cfg.cls}">${row.rank===1?'👑':row.rank===2?'🥈':'🥉'} 今月のお得度 ${row.rank}位</div>`}else html+=`<div class="detailRank otherRank">今月のお得度 ${row.rank}位</div>`}else html+='<div class="detailRank noDeal">確認済み追加特典の順位なし（基本還元は対象）</div>';
   if(row.amount>0){
-    const effective=fmtRate(Math.round(row.effectiveRate*10)/10),parts=[`基本7% 約${Math.round(row.basePoints).toLocaleString('ja-JP')}pt`];if(row.bonusPoints>0)parts.push(`BONUS+ 約${Math.round(row.bonusPoints).toLocaleString('ja-JP')}pt`);if(row.extraPoints>0)parts.push(`その他 約${Math.round(row.extraPoints).toLocaleString('ja-JP')}pt`);
-    const b=row.base;html+=`<div class="amountEstimate dayDealInfo">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → <b>概算獲得 約${Math.round(row.totalPoints).toLocaleString('ja-JP')}pt</b>（合計実質${effective}%）<br><span class="dealBreakdown">${parts.join(' / ')}</span><br><span class="dealBreakdown">基本内訳：ストア ${b.store.toLocaleString('ja-JP')}pt / LINE連携 ${b.line.toLocaleString('ja-JP')}pt / LYP ${b.lyp.toLocaleString('ja-JP')}pt / PayPayクレジット ${b.paypay.toLocaleString('ja-JP')}pt</span><br><small>基本表示率は7%（ストア1% + LINE連携3% + LYPプレミアム2% + PayPayクレジット1%）。標準税率10%の商品を前提に、ストア/LINE/LYP/BONUS+/キャンペーンは税抜相当額、PayPayクレジットは税込決済額の200円単位で概算しています。要エントリー企画はエントリー済、クーポンは使用しない前提です。</small></div>`;
+    const effective=fmtRate(Math.round(row.effectiveRate*10)/10),parts=[`基本7% 約${Math.round(row.basePoints).toLocaleString('ja-JP')}pt`];if(row.bonusPoints>0)parts.push(`BONUS+ 約${Math.round(row.bonusPoints).toLocaleString('ja-JP')}pt`);if(row.extraPoints>0)parts.push(`その他確認済み 約${Math.round(row.extraPoints).toLocaleString('ja-JP')}pt`);
+    const b=row.base;html+=`<div class="amountEstimate dayDealInfo">予定購入 ${Math.round(row.amount).toLocaleString('ja-JP')}円 → <b>概算獲得 約${Math.round(row.totalPoints).toLocaleString('ja-JP')}pt</b>（合計実質${effective}%）<br><span class="dealBreakdown">${parts.join(' / ')}</span><br><span class="dealBreakdown">基本内訳：ストア ${b.store.toLocaleString('ja-JP')}pt / LINE連携 ${b.line.toLocaleString('ja-JP')}pt / LYP ${b.lyp.toLocaleString('ja-JP')}pt / PayPayクレジット ${b.paypay.toLocaleString('ja-JP')}pt</span><br><small>基本表示率は7%（ストア1% + LINE連携3% + LYPプレミアム2% + PayPayクレジット1%）。標準税率10%の商品を前提に、税抜相当額と各企画の注文下限・付与上限で概算しています。対象ストア限定企画はYahoo!公式情報で選択ショップの対象確認ができたものだけ加算します。ヤフショ感謝デーはゴールドランク前提です。要エントリー企画はエントリー済、クーポンは使用しない前提です。</small></div>`;
   }else{
-    const parts=[`基本 +7%`];if(row.bonusRate>0)parts.push(`BONUS+ +${fmtRate(row.bonusRate)}%`);if(row.campaignRate>0)parts.push(`その他 +${fmtRate(row.campaignRate)}%`);html+=`<div class="amountEstimate dayDealInfo">表示上の合計還元率 <b>${fmtRate(row.rateScore)}%</b><br><span class="dealBreakdown">${parts.join(' / ')}</span><br><small>予定購入金額を入力すると、基本ポイントを含めた概算獲得ポイントを表示します。</small></div>`;
+    const parts=[`基本 +7%`];if(row.bonusRate>0)parts.push(`BONUS+ +${fmtRate(row.bonusRate)}%`);if(row.campaignRate>0)parts.push(`その他確認済み +${fmtRate(row.campaignRate)}%`);html+=`<div class="amountEstimate dayDealInfo">表示上の確認済み合計還元率 <b>${fmtRate(row.rateScore)}%</b><br><span class="dealBreakdown">${parts.join(' / ')}</span><br><small>予定購入金額を入力すると、基本ポイントを含めた概算獲得ポイントを表示します。対象判定保留の企画は合計に含めません。</small></div>`;
   }
   d.insertAdjacentHTML('afterend',html)
 };
+window.OTOKUBI_SHOP_PROFILE=BASE_PROFILE;
 window.addEventListener('load',()=>setTimeout(updateRankMarks,250));
 })();
