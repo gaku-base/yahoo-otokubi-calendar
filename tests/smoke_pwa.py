@@ -32,6 +32,16 @@ def check_total_point_display(page):
     day2=page.get_by_role('button',name='8月2日');assert '計 5,590pt' in day2.inner_text(),day2.inner_text();day2.click();detail=page.locator('#detail').inner_text();assert '合計獲得 約5,590pt' in detail,detail;assert '通常ポイント 7% 約2,320pt' in detail,detail;assert 'BONUS+ 約3,270pt' in detail,detail;assert '通常日比 +1,635pt' in detail,detail
     day1=page.get_by_role('button',name='8月1日');assert '計 3,955pt' in day1.inner_text(),day1.inner_text();day1.click();detail=page.locator('#detail').inner_text();assert '通常日と同じ水準' in detail and '合計獲得 約3,955pt' in detail and '通常ポイント 7% 約2,320pt' in detail,detail
 
+def check_same_day_happy24(page):
+    days=synthetic_days();page.evaluate(f'''() => {{
+      window.__OTOKUBI_TODAY__='2026-08-19';
+      bonus={{rate_caps:{{'5':5000}},store_catalog:[['テストショップ','test-shop']],days:[{days}]}};
+      campaigns={{campaigns:[{{title:'ハッピー24アワー',dates:['2026-08-19'],rate:4,rate_label:'+4%',is_total:false,is_max:false,informational:false,rankable:true,target_store_limited:false,eligibility_rule:'all',same_day_discovery:true,conditions:['要エントリー 注文3,000円～ 付与上限2,000円相当']}}]}};
+      activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';document.querySelector('#purchaseAmount').value='35980';view=new Date(2026,7,1);selectedIso='';render();
+    }}''')
+    r=page.evaluate("()=>OtokubiDailyPoints.scoreDay('2026-08-19',19,activeShopQuery,35980)");assert r['campaignRate']==4 and r['campaignPoints']==1308 and r['totalPoints']==5263,r
+    cell=page.get_by_role('button',name='8月19日');assert '計 5,263pt' in cell.inner_text(),cell.inner_text();cell.click();detail=page.locator('#detail').inner_text();assert 'ハッピー24アワー 約1,308pt' in detail and '合計獲得 約5,263pt' in detail,detail
+
 def check_unknown_day_zero(page):
     days=synthetic_days({2:10});page.evaluate(f'''() => {{
       window.__OTOKUBI_TODAY__='2026-08-01';
@@ -72,7 +82,7 @@ def check_past_days_excluded(page):
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
-        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True);page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert 'v0.9.7' in page.locator('.versionBadge').inner_text();assert '通常ポイント 7%' in page.locator('#calcAssumption').inner_text();assert '過去日は順位対象外' in page.locator('#calcAssumption').inner_text();assert '未確認条件は0pt' in page.locator('#calcAssumption').inner_text();assert page.locator('#fiveDayEligible').is_checked();assert page.locator('#yahooRank').input_value() in ('unknown','silver','gold','none');check_sunday_start(page);check_mobile_bonus_badge(page);check_alias(page,'ジョーシン','joshin');check_alias(page,'ヤマダ電機','yamada-denki');iphone.close()
-        desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo');page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_total_point_display(page);check_unknown_day_zero(page);check_premium_sunday_and_rank(page);check_past_days_excluded(page);desktop.close();browser.close()
-    print('PWA smoke: PASS (v0.9.7 past days excluded + total points + unresolved as zero)')
+        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True);page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert 'v0.9.8' in page.locator('.versionBadge').inner_text();assert '通常ポイント 7%' in page.locator('#calcAssumption').inner_text();assert '過去日は順位対象外' in page.locator('#calcAssumption').inner_text();assert '未確認条件は0pt' in page.locator('#calcAssumption').inner_text();assert '当日発表のデイリーボーナス' in page.locator('#calcAssumption').inner_text();assert page.locator('#fiveDayEligible').is_checked();assert page.locator('#yahooRank').input_value() in ('unknown','silver','gold','none');check_sunday_start(page);check_mobile_bonus_badge(page);check_alias(page,'ジョーシン','joshin');check_alias(page,'ヤマダ電機','yamada-denki');iphone.close()
+        desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo');page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_total_point_display(page);check_same_day_happy24(page);check_unknown_day_zero(page);check_premium_sunday_and_rank(page);check_past_days_excluded(page);desktop.close();browser.close()
+    print('PWA smoke: PASS (v0.9.8 same-day bonus + past exclusion + total points + unresolved as zero)')
 if __name__=='__main__':main()
