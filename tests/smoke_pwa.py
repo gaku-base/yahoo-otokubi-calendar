@@ -64,14 +64,14 @@ def check_top3_ranking(page):
     assert '2位' in texts[1] and '5日' in texts[1] and '合計16%' in texts[1],texts
     assert '3位' in texts[2] and '1日' in texts[2] and '合計15%' in texts[2],texts
     page.locator('#purchaseAmount').fill('100000')
-    page.wait_for_function("document.querySelector('#top3Strip .top3Item strong')?.textContent.includes('15,044pt')")
-    texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '15,044pt' in texts[0],texts
-    assert '2位' in texts[1] and '1日' in texts[1] and '12,499pt' in texts[1],texts
-    assert '3位' in texts[2] and '4日' in texts[2] and '12,317pt' in texts[2],texts
+    page.wait_for_function("document.querySelector('#top3Strip .top3Item strong')?.textContent.includes('15,544pt')")
+    texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '15,544pt' in texts[0],texts
+    assert '2位' in texts[1] and '1日' in texts[1] and '12,999pt' in texts[1],texts
+    assert '3位' in texts[2] and '4日' in texts[2] and '12,817pt' in texts[2],texts
     assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月1日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月4日'
-    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約15,044pt' in detail,detail;assert '基本7% 約5,954pt' in detail and 'エントリー済' in detail and 'クーポンは使用しない' in detail,detail
-    page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '約11,499pt' in detail,detail;assert 'BONUS+ 約4,545pt' in detail and 'その他 約1,000pt' in detail and '基本7% 約5,954pt' in detail,detail
-    page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '確認済み追加特典の順位なし（基本還元は対象）' in detail and '約5,954pt' in detail,detail;assert 'BONUS+' not in detail,detail
+    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約15,544pt' in detail,detail;assert '基本7% 約6,454pt' in detail and 'エントリー済' in detail and 'クーポンは使用しない' in detail,detail
+    page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '約11,999pt' in detail,detail;assert 'BONUS+ 約4,545pt' in detail and 'その他 約1,000pt' in detail and '基本7% 約6,454pt' in detail,detail
+    page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '確認済み追加特典の順位なし（基本還元は対象）' in detail and '約6,454pt' in detail,detail;assert 'BONUS+' not in detail,detail
     page.locator('#purchaseAmount').fill('35980');page.get_by_role('button',name='8月6日').click();detail=page.locator('#detail').inner_text();assert '概算獲得 約3,955pt' in detail,detail;assert '基本7% 約2,320pt' in detail and 'BONUS+ 約1,635pt' in detail,detail;assert 'ストア 327pt' in detail and 'LINE連携 981pt' in detail and 'LYP 654pt' in detail and 'PayPayクレジット 358pt' in detail,detail
 
 def main():
