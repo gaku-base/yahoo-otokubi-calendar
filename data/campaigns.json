@@ -3,7 +3,7 @@
   "version": "0.7.5",
   "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
   "fallback_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-  "updated_at": "2026-08-18T11:56:06.575754+09:00",
+  "updated_at": "2026-08-18T13:02:33.418528+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlusくじ",
@@ -214,7 +214,7 @@
       "count_warnings": 0,
       "campaign_dates": 17,
       "informational_campaigns": 3,
-      "elapsed_seconds": 254.6,
+      "elapsed_seconds": 257.5,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
