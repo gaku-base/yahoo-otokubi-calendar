@@ -3,23 +3,38 @@
   "version": "0.7.5",
   "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
   "fallback_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-  "updated_at": "2026-08-18T08:37:59.419731+09:00",
+  "updated_at": "2026-08-18T10:21:00+09:00",
   "campaigns": [
+    {
+      "title": "ボーナスストアPlusくじ",
+      "rate": null,
+      "rate_label": "最大1万円相当",
+      "is_max": true,
+      "is_total": false,
+      "dates": ["2026-08-18", "2026-08-19", "2026-08-20"],
+      "conditions": ["対象ストア限定 1注文1,000円～69,999円"],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "entry_required": false,
+      "target_store_limited": true,
+      "informational": true,
+      "calculation_mode": "lottery",
+      "eligibility_mode": "unknown"
+    },
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
       "rate": 3.0,
       "rate_label": "+3%",
       "is_max": false,
       "is_total": false,
-      "dates": [
-        "2026-08-21"
-      ],
-      "conditions": [
-        "注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定"
-      ],
+      "dates": ["2026-08-21"],
+      "conditions": ["注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": true
+      "target_store_limited": true,
+      "informational": false,
+      "calculation_mode": "additive",
+      "eligibility_mode": "excellent_store_unknown",
+      "detail_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/"
     },
     {
       "title": "ボーナスストアPlusでさらに+2%",
@@ -27,15 +42,15 @@
       "rate_label": "+2%",
       "is_max": false,
       "is_total": false,
-      "dates": [
-        "2026-08-21"
-      ],
-      "conditions": [
-        "注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定"
-      ],
+      "dates": ["2026-08-21"],
+      "conditions": ["注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": true
+      "target_store_limited": true,
+      "informational": false,
+      "calculation_mode": "additive",
+      "eligibility_mode": "bonus_store_day",
+      "detail_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/"
     },
     {
       "title": "ヤフショ感謝デー",
@@ -43,16 +58,16 @@
       "rate_label": "最大+5%",
       "is_max": true,
       "is_total": false,
-      "dates": [
-        "2026-08-22",
-        "2026-09-22"
-      ],
-      "conditions": [
-        "要エントリー シルバー+4%・ゴールド+5% 対象ストア限定 付与上限1000円相当"
-      ],
+      "dates": ["2026-08-22", "2026-09-22"],
+      "conditions": ["要エントリー シルバー+4%・ゴールド+5% 対象ストア限定 付与上限1000円相当"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": true
+      "target_store_limited": true,
+      "informational": false,
+      "calculation_mode": "rank_additive",
+      "eligibility_mode": "bonus_badge_unknown",
+      "rank_rates": {"silver": 4.0, "gold": 5.0},
+      "detail_url": "https://shopping.yahoo.co.jp/promotion/campaign/pointrank/"
     },
     {
       "title": "プレミアムな日曜日",
@@ -60,19 +75,15 @@
       "rate_label": "+5%",
       "is_max": false,
       "is_total": false,
-      "dates": [
-        "2026-08-23",
-        "2026-08-30",
-        "2026-09-06",
-        "2026-09-20",
-        "2026-09-27"
-      ],
-      "conditions": [
-        "注文5,000円～ 付与上限2,000円相当 要エントリー 対象ストア限定"
-      ],
+      "dates": ["2026-08-23", "2026-08-30", "2026-09-06", "2026-09-20", "2026-09-27"],
+      "conditions": ["注文5,000円～ 付与上限2,000円相当 要エントリー 対象ストア限定"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": true
+      "target_store_limited": true,
+      "informational": false,
+      "calculation_mode": "additive",
+      "eligibility_mode": "bonus_badge_unknown",
+      "detail_url": "https://shopping.yahoo.co.jp/promotion/campaign/lypsunday/"
     },
     {
       "title": "Brand Week",
@@ -80,21 +91,14 @@
       "rate_label": "最大25%",
       "is_max": true,
       "is_total": true,
-      "dates": [
-        "2026-08-24",
-        "2026-08-25",
-        "2026-08-26",
-        "2026-08-27",
-        "2026-08-28",
-        "2026-08-29",
-        "2026-08-30"
-      ],
-      "conditions": [
-        "要エントリー 対象ストア限定 付与上限あり"
-      ],
+      "dates": ["2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30"],
+      "conditions": ["要エントリー 対象ストア限定 付与上限あり"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": true
+      "target_store_limited": true,
+      "informational": true,
+      "calculation_mode": "total_max",
+      "eligibility_mode": "unknown"
     },
     {
       "title": "5のつく日",
@@ -102,18 +106,23 @@
       "rate_label": "+4%",
       "is_max": false,
       "is_total": false,
-      "dates": [
-        "2026-08-25"
-      ],
-      "conditions": [
-        "要エントリー 指定支払い方法あり 付与上限1,000円相当"
-      ],
+      "dates": ["2026-08-25"],
+      "conditions": ["要エントリー 指定支払い方法あり 付与上限1,000円相当"],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "entry_required": true,
-      "target_store_limited": false
+      "target_store_limited": false,
+      "informational": false,
+      "calculation_mode": "additive",
+      "eligibility_mode": "not_limited",
+      "detail_url": "https://shopping.yahoo.co.jp/promotion/campaign/5day/"
     }
   ],
   "errors": [],
+  "metadata_diagnostics": {
+    "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+    "informational_found": 1,
+    "errors": []
+  },
   "validation": {
     "ok": true,
     "issues": [],
@@ -122,11 +131,12 @@
       "ok": 47,
       "partial": 0,
       "bad": 0,
-      "campaigns": 6,
+      "campaigns": 7,
       "stores": 264923,
       "categories": 2350,
       "count_warnings": 0,
-      "campaign_dates": 14,
+      "campaign_dates": 17,
+      "informational_campaigns": 2,
       "elapsed_seconds": 239.0,
       "concurrency": 6,
       "category_audit_issues": 0,
