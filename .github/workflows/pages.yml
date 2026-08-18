@@ -23,8 +23,11 @@ jobs:
           node --check docs/manual_refresh.js
           node --check docs/calc_assumptions.js
           node --check docs/sunday_start.js
+          node --check docs/campaign_ui.js
           node --check docs/sw.js
           node tests/test_core.js
+      - name: Validate campaign metadata rules
+        run: python tests/test_campaign_meta.py
       - name: Validate PWA package
         run: python tests/check_package.py
       - name: Validate source JSON files
