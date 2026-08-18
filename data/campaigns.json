@@ -4,7 +4,9 @@
   "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
   "fallback_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-  "updated_at": "2026-08-19T08:36:25.447784+09:00",
+  "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
+  "today_marker_found": true,
+  "updated_at": "2026-08-19T08:44:22.711572+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -85,6 +87,27 @@
       "eligibility_rule": "bonus_plus_member",
       "rankable": true,
       "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
+    },
+    {
+      "title": "ハッピー24アワー",
+      "rate": 4.0,
+      "rate_label": "+4%",
+      "is_max": false,
+      "is_total": false,
+      "informational": false,
+      "dates": [
+        "2026-08-19"
+      ],
+      "conditions": [
+        "要エントリー 注文3,000円～ 付与上限2,000円相当"
+      ],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
+      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/happyhour/",
+      "entry_required": true,
+      "target_store_limited": false,
+      "eligibility_rule": "all",
+      "rankable": true,
+      "same_day_discovery": true
     },
     {
       "title": "ボーナスストアPlusくじ",
@@ -249,15 +272,17 @@
       "ok": 48,
       "partial": 0,
       "bad": 0,
-      "campaigns": 9,
+      "campaigns": 10,
       "stores": 263715,
       "categories": 2400,
       "count_warnings": 0,
       "campaign_dates": 33,
       "informational_campaigns": 3,
+      "today_campaigns": 1,
+      "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 255.1,
+      "elapsed_seconds": 255.3,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
