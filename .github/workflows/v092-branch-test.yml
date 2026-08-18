@@ -30,7 +30,7 @@ jobs:
           node --check docs/campaign_ui.js
           node --check docs/sw.js
           node tests/test_core.js
-      - run: python -m playwright install --with-deps chromium
+      - run: python -m playwright install chromium
       - name: Verify current Yahoo official campaign semantics
         run: |
           python - <<'PY'
