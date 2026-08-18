@@ -48,7 +48,8 @@ def check_top3_ranking(page):
         {date:'2026-08-02',status:'ok',offers:[[0,10]]},
         {date:'2026-08-03',status:'ok',offers:[]},
         {date:'2026-08-04',status:'ok',offers:[[0,7]]},
-        {date:'2026-08-05',status:'ok',offers:[[0,5]]}
+        {date:'2026-08-05',status:'ok',offers:[[0,5]]},
+        {date:'2026-08-06',status:'ok',offers:[[0,5]]}
       ]};
       campaigns={campaigns:[
         {title:'最大表示',dates:['2026-08-01'],rate:20,is_total:true,target_store_limited:false},
@@ -57,26 +58,27 @@ def check_top3_ranking(page):
       activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';view=new Date(2026,7,1);selectedIso='';render();
     }''')
     page.wait_for_function("document.querySelectorAll('#top3Strip .top3Item').length===3")
-    absent=page.get_by_role('button',name='8月3日');assert 'BONUS+' not in absent.inner_text(),absent.inner_text();absent.click();detail=page.locator('#detail').inner_text();assert 'BONUS+' not in detail,detail;assert '順位計算に使える確認済み追加特典なし' in detail and '+0%' in detail,detail
+    absent=page.get_by_role('button',name='8月3日');assert 'BONUS+' not in absent.inner_text(),absent.inner_text();absent.click();detail=page.locator('#detail').inner_text();assert 'BONUS+' not in detail,detail;assert '確認済み追加特典の順位なし（基本還元は対象）' in detail and '7%' in detail,detail
     texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert all('3日' not in t for t in texts),texts
-    assert '1位' in texts[0] and '2日' in texts[0] and '+10%' in texts[0],texts
-    assert '2位' in texts[1] and '5日' in texts[1] and '+9%' in texts[1],texts
-    assert '3位' in texts[2] and '1日' in texts[2] and '+8%' in texts[2],texts
+    assert '1位' in texts[0] and '2日' in texts[0] and '合計17%' in texts[0],texts
+    assert '2位' in texts[1] and '5日' in texts[1] and '合計16%' in texts[1],texts
+    assert '3位' in texts[2] and '1日' in texts[2] and '合計15%' in texts[2],texts
     page.locator('#purchaseAmount').fill('100000')
-    page.wait_for_function("document.querySelector('#top3Strip .top3Item strong')?.textContent.includes('10,000pt')")
-    texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '10,000pt' in texts[0],texts
-    assert '2位' in texts[1] and '1日' in texts[1] and '7,000pt' in texts[1],texts
-    assert '3位' in texts[2] and '4日' in texts[2] and '7,000pt' in texts[2],texts
+    page.wait_for_function("document.querySelector('#top3Strip .top3Item strong')?.textContent.includes('15,544pt')")
+    texts=page.locator('#top3Strip .top3Item').all_inner_texts();assert '1位' in texts[0] and '2日' in texts[0] and '15,544pt' in texts[0],texts
+    assert '2位' in texts[1] and '1日' in texts[1] and '12,999pt' in texts[1],texts
+    assert '3位' in texts[2] and '4日' in texts[2] and '12,817pt' in texts[2],texts
     assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月1日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月4日'
-    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約10,000pt' in detail,detail;assert 'エントリー済・クーポンは使用しない前提' in detail,detail
-    page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '予定購入 100,000円' in detail and '約6,000pt' in detail,detail;assert 'BONUS+ 約5,000pt' in detail and 'その他 約1,000pt' in detail,detail
-    page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '順位計算に使える確認済み追加特典なし' in detail and '約0pt' in detail,detail;assert 'BONUS+' not in detail,detail
+    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約15,544pt' in detail,detail;assert '基本7% 約6,454pt' in detail and 'エントリー済' in detail and 'クーポンは使用しない' in detail,detail
+    page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '約11,999pt' in detail,detail;assert 'BONUS+ 約4,545pt' in detail and 'その他 約1,000pt' in detail and '基本7% 約6,454pt' in detail,detail
+    page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '確認済み追加特典の順位なし（基本還元は対象）' in detail and '約6,454pt' in detail,detail;assert 'BONUS+' not in detail,detail
+    page.locator('#purchaseAmount').fill('35980');page.get_by_role('button',name='8月6日').click();detail=page.locator('#detail').inner_text();assert '概算獲得 約3,955pt' in detail,detail;assert '基本7% 約2,320pt' in detail and 'BONUS+ 約1,635pt' in detail,detail;assert 'ストア 327pt' in detail and 'LINE連携 981pt' in detail and 'LYP 654pt' in detail and 'PayPayクレジット 358pt' in detail,detail
 
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
         iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True)
-        page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert page.locator('#purchaseAmount').is_visible();assert 'v0.9.0' in page.locator('.versionBadge').inner_text();assert 'エントリー済' in page.locator('#calcAssumption').inner_text() and 'クーポンは使用しない' in page.locator('#calcAssumption').inner_text();assert page.evaluate('OTOKUBI_CALC_ASSUMPTIONS.entryCompleted && OTOKUBI_CALC_ASSUMPTIONS.ignoreCoupons') is True;check_sunday_start(page);target=target_offer(page);check_offer(page,target);check_known_alias(page,'ジョーシン','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki')
+        page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert page.locator('#purchaseAmount').is_visible();assert 'v0.9.1' in page.locator('.versionBadge').inner_text();assumption=page.locator('#calcAssumption').inner_text();assert '基本7%' in assumption and 'LINE連携3%' in assumption and 'LYPプレミアム2%' in assumption and 'PayPayクレジット1%' in assumption;assert 'エントリー済' in assumption and 'クーポンは使用しない' in assumption;assert page.evaluate('OTOKUBI_CALC_ASSUMPTIONS.entryCompleted && OTOKUBI_CALC_ASSUMPTIONS.ignoreCoupons') is True;check_sunday_start(page);target=target_offer(page);check_offer(page,target);check_known_alias(page,'ジョーシン','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki')
         page.wait_for_function("document.querySelector('#top3Strip') !== null");assert page.locator('#top3Strip').is_visible()
         page.evaluate("navigator.serviceWorker && navigator.serviceWorker.ready");page.wait_for_function("navigator.serviceWorker && navigator.serviceWorker.controller !== null",timeout=10000);page.evaluate("load()");wait_loaded(page);assert page.locator('#calendar .dow').first.inner_text()=='日'
         cache_keys=page.evaluate("async()=> (await (await caches.open('otokubi-data-v1')).keys()).map(r=>r.url)")
@@ -92,6 +94,6 @@ def main():
         failed={'schema':1,'version':'0.8.0','last_attempt_at':'2026-08-17T10:00:00+09:00','last_attempt_ok':False,'last_attempt_exit_code':2,'message':'最新更新失敗','issues':['Incomplete BONUS+ days: 1'],'attempt_counts':{'partial':1},'attempt_source_updated_at':'2026-08-17T10:00:00+09:00','last_good_updated_at':'2026-08-17T09:00:00+09:00'}
         statusctx.route('**/data/status.json*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(failed,ensure_ascii=False)))
         page=statusctx.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);state=page.locator('#dataState').inner_text();assert '最新取得失敗' in state and '前回正常データを使用' in state,state;assert 'warning' in (page.locator('#dataState').get_attribute('class') or '');statusctx.close();browser.close()
-    print('PWA smoke: PASS (Sunday-first + entry-complete/coupon-ignore assumptions + clicked day info + silent non-eligible + purchase amount caps + Top3 + Joshin/Yamada + iPhone offline + Windows + PNG)')
+    print('PWA smoke: PASS (base 7% + screenshot point example + Sunday-first + entry-complete/coupon-ignore + clicked day info + fail-closed + iPhone offline + Windows + PNG)')
 
 if __name__=='__main__':main()

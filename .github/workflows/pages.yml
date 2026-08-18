@@ -19,6 +19,7 @@ jobs:
         run: |
           node --check docs/core.js
           node --check docs/app.js
+          node --check docs/rank.js
           node --check docs/manual_refresh.js
           node --check docs/calc_assumptions.js
           node --check docs/sunday_start.js
