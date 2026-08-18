@@ -23,6 +23,7 @@ jobs:
           node --check docs/manual_refresh.js
           node --check docs/calc_assumptions.js
           node --check docs/sunday_start.js
+          node --check docs/mobile_badge.js
           node --check docs/sw.js
           node tests/test_core.js
       - name: Validate PWA package
