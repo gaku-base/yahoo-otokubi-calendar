@@ -6,8 +6,13 @@ CALENDAR_URL='https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calenda
 JST=timezone(timedelta(hours=9))
 WEEKDAYS={'月','火','水','木','金','土','日','月曜','火曜','水曜','木曜','金曜','土曜','日曜'}
 FINAL_STOP='※付与されるPayPayポイントは'
-TITLE_EXCLUDES=('クーポン','くじ','抽選','OFF','値引','ギフトで贈る')
 DETAIL_PREFIXES=('注文','要エントリー','対象','付与上限','先着順','利用下限','指定支払い','条件')
+SOURCE_URLS={
+ '5のつく日':'https://shopping.yahoo.co.jp/promotion/campaign/5day/',
+ 'プレミアムな日曜日':'https://shopping.yahoo.co.jp/promotion/campaign/lypsunday/',
+ 'ヤフショ感謝デー':'https://shopping.yahoo.co.jp/promotion/campaign/pointrank/',
+ 'ボーナスストアPlus':'https://shopping.yahoo.co.jp/promotion/campaign/bsplus/',
+}
 
 def clean(s:str)->str:return re.sub(r'\s+',' ',s or '').strip()
 def norm(s:str)->str:return re.sub(r'[\s\-_・･/／]+','',unicodedata.normalize('NFKC',s or '').lower())
@@ -44,20 +49,28 @@ def parse_rate(line:str):
     s=unicodedata.normalize('NFKC',clean(line)).replace('％','%')
     m=re.fullmatch(r'(最大\s*)?\+\s*(\d{1,2}(?:\.\d+)?)\s*%',s,re.I)
     if not m:return None
-    return {'rate':float(m.group(2)),'is_max':bool(m.group(1)),'rate_label':s.replace(' ',''),'is_total':False}
+    return {'rate':float(m.group(2)),'is_max':bool(m.group(1)),'rate_label':s.replace(' ',''),'is_total':False,'informational':False}
 
 def parse_total_rate(line:str):
     s=unicodedata.normalize('NFKC',clean(line)).replace('％','%')
     m=re.fullmatch(r'最大\s*(\d{1,2}(?:\.\d+)?)\s*%',s,re.I)
     if not m:return None
-    return {'rate':None,'is_max':True,'rate_label':s.replace(' ',''),'is_total':True}
+    return {'rate':None,'is_max':True,'rate_label':s.replace(' ',''),'is_total':True,'informational':False}
+
+def parse_info_value(line:str):
+    s=unicodedata.normalize('NFKC',clean(line)).replace('％','%')
+    if s=='先着順':return {'rate':None,'is_max':False,'rate_label':'先着順','is_total':False,'informational':True}
+    if re.fullmatch(r'最大\s*[0-9,.]+\s*(?:万)?円相当',s):return {'rate':None,'is_max':True,'rate_label':s.replace(' ',''),'is_total':False,'informational':True}
+    if re.fullmatch(r'最大\s*\d+(?:\.\d+)?\s*%OFF',s,re.I):return {'rate':None,'is_max':True,'rate_label':s.replace(' ',''),'is_total':False,'informational':True}
+    return None
+
+def event_value(line:str):return parse_rate(line) or parse_total_rate(line) or parse_info_value(line)
 
 def looks_like_title(line:str)->bool:
     s=clean(line)
     if not s or s in WEEKDAYS or s.isdigit() or len(s)>90:return False
-    if any(x.lower() in s.lower() for x in TITLE_EXCLUDES):return False
     if any(s.startswith(x) for x in DETAIL_PREFIXES):return False
-    if parse_rate(s) or parse_total_rate(s):return False
+    if event_value(s):return False
     if re.fullmatch(r'\d{1,2}/\d{1,2}',s) or parse_range(s):return False
     return True
 
@@ -76,10 +89,21 @@ def day_from_number(n:int,active_range,cursor:date|None,reference:date):
         return None
     return next_occurrence(n,cursor or reference)
 
-def add_group(groups,title,rate,current,detail=''):
-    key=(norm(title),rate.get('rate'),rate.get('rate_label'))
+def source_url_for(title:str):
+    for k,u in SOURCE_URLS.items():
+        if k in title:return u
+    return CALENDAR_URL
+
+def eligibility_rule_for(title:str,target_store_limited:bool):
+    if 'ボーナスストアPlusでさらに+2%' in title:return 'bonus_plus_member'
+    if '優良ストア' in title and 'ボーナスストアPlus' in title:return 'preferred_bonus_store'
+    if target_store_limited:return 'campaign_target_store'
+    return 'all'
+
+def add_group(groups,title,value,current,detail=''):
+    key=(norm(title),value.get('rate'),value.get('rate_label'))
     if key not in groups:
-        groups[key]={'title':title,'rate':rate.get('rate'),'rate_label':rate.get('rate_label'),'is_max':rate.get('is_max',False),'is_total':rate.get('is_total',False),'dates':[],'conditions':[],'source':CALENDAR_URL}
+        groups[key]={'title':title,'rate':value.get('rate'),'rate_label':value.get('rate_label'),'is_max':value.get('is_max',False),'is_total':value.get('is_total',False),'informational':value.get('informational',False),'dates':[],'conditions':[],'source':CALENDAR_URL,'source_url':source_url_for(title)}
     iso=current.isoformat()
     if iso not in groups[key]['dates']:groups[key]['dates'].append(iso)
     if detail and detail not in groups[key]['conditions']:groups[key]['conditions'].append(detail)
@@ -93,11 +117,11 @@ def parse_period_campaigns(lines,start_index:int,reference:date,groups):
         if lines[i+1] not in ('〜','～','~','-'):i+=1;continue
         m2=re.fullmatch(r'(\d{1,2})\s*[（(][月火水木金土日](?:曜)?[）)]',lines[i+2])
         if not m2:i+=1;continue
-        start=next_occurrence(int(m1.group(1)),base);end=next_occurrence(int(m2.group(1)),start or base);title=lines[i+3];r=parse_rate(lines[i+4]) or parse_total_rate(lines[i+4])
-        if start and end and end>=start and (end-start).days<=31 and r and looks_like_title(title):
-            detail=lines[i+5] if i+5<len(lines) and not lines[i+5].startswith(FINAL_STOP) else ''
+        start=next_occurrence(int(m1.group(1)),base);end=next_occurrence(int(m2.group(1)),start or base);title=lines[i+3];v=event_value(lines[i+4])
+        if start and end and end>=start and (end-start).days<=31 and v and looks_like_title(title):
+            detail=lines[i+5] if i+5<len(lines) and not lines[i+5].startswith(FINAL_STOP) and not re.match(r'^\d+\s*[（(]',lines[i+5]) else ''
             d=start
-            while d<=end:add_group(groups,title,r,d,detail);d+=timedelta(days=1)
+            while d<=end:add_group(groups,title,v,d,detail);d+=timedelta(days=1)
             base=start
         i+=5
 
@@ -118,26 +142,22 @@ def parse_calendar_text(text:str,reference:date|None=None):
             if 1<=n<=31:
                 d=day_from_number(n,active,cursor,ref)
                 if d:current=d;cursor=d;continue
-        rate=parse_rate(line)
-        if not current or not rate or i==0:continue
+        v=event_value(line)
+        if not current or not v or i==0:continue
         title=lines[i-1]
         if not looks_like_title(title):continue
         detail=''
         if i+1<len(lines):
             nxt=lines[i+1]
-            if not parse_rate(nxt) and not parse_total_rate(nxt) and not parse_range(nxt,ref) and not re.fullmatch(r'\d{1,2}(?:/\d{1,2})?',nxt) and nxt not in WEEKDAYS:detail=nxt
-        add_group(groups,title,rate,current,detail)
+            if not event_value(nxt) and not parse_range(nxt,ref) and not re.fullmatch(r'\d{1,2}(?:/\d{1,2})?',nxt) and nxt not in WEEKDAYS:detail=nxt
+        add_group(groups,title,v,current,detail)
     if period_index is not None:parse_period_campaigns(lines,period_index,ref,groups)
     out=list(groups.values())
     for c in out:
-        c['dates'].sort();joined=' '.join(c.get('conditions',[]));c['entry_required']='要エントリー' in joined;c['target_store_limited']='対象ストア限定' in joined
+        c['dates'].sort();joined=' '.join(c.get('conditions',[]));c['entry_required']='要エントリー' in joined;c['target_store_limited']='対象ストア限定' in joined or '対象ストア・商品限定' in joined;c['eligibility_rule']=eligibility_rule_for(c['title'],c['target_store_limited']);c['rankable']=not c.get('informational') and not c.get('is_total')
     out.sort(key=lambda c:(c['dates'][0] if c['dates'] else '9999',c['title']));return out
 
 def merge_safe_guide(calendar_campaigns:list[dict],guide:dict):
-    # The official daily-bonus calendar is authoritative for Brand/爆買 campaigns,
-    # because guide titles can describe a total maximum without enough information
-    # to safely turn it into an additive percentage. Guide fallback is therefore
-    # limited to campaigns with a known additive interpretation.
     out=[dict(c) for c in calendar_campaigns];index={(norm(c['title']),c.get('rate'),c.get('rate_label')):c for c in out}
     for c in guide.get('campaigns',[]):
         title=clean(c.get('title',''));rate=None;is_max=False;rate_label=None
@@ -146,7 +166,7 @@ def merge_safe_guide(calendar_campaigns:list[dict],guide:dict):
         else:continue
         key=(norm(title),rate,rate_label);row=index.get(key)
         if row is None:
-            row={'title':title,'rate':rate,'rate_label':rate_label,'is_max':is_max,'is_total':False,'dates':[],'conditions':[],'source':guide.get('source'),'period':c.get('period','')};out.append(row);index[key]=row
+            row={'title':title,'rate':rate,'rate_label':rate_label,'is_max':is_max,'is_total':False,'informational':False,'dates':[],'conditions':[],'source':guide.get('source'),'source_url':source_url_for(title),'period':c.get('period',''),'target_store_limited':True,'eligibility_rule':'campaign_target_store','rankable':True};out.append(row);index[key]=row
         for iso in c.get('dates',[]):
             if iso not in row['dates']:row['dates'].append(iso)
         row['dates'].sort()
@@ -158,6 +178,6 @@ async def collect_calendar(page,reference:date|None=None):
         resp=await page.goto(CALENDAR_URL,wait_until='domcontentloaded',timeout=45000)
         if resp and resp.status>=400:raise RuntimeError(f'HTTP {resp.status}')
         await page.wait_for_timeout(400);body=await page.locator('body').inner_text(timeout=15000);result['campaigns']=parse_calendar_text(body,reference)
-        if not result['campaigns']:raise RuntimeError('No point campaigns parsed from official bonus calendar')
+        if not result['campaigns']:raise RuntimeError('No campaigns parsed from official bonus calendar')
     except Exception as e:result['errors'].append({'message':clean(repr(e))[:500]})
     return result
