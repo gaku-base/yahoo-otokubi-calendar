@@ -32,3 +32,6 @@ def test_annotations_are_fail_closed_and_gold_aware():
     sun=m.annotate({'title':'プレミアムな日曜日','rate':5,'target_store_limited':True});assert sun['eligibility_mode']=='bonus_badge_unknown'
     thanks=m.annotate({'title':'ヤフショ感謝デー','rate':5,'is_max':True,'conditions':['要エントリー シルバー+4%・ゴールド+5% 対象ストア限定'],'target_store_limited':True});assert thanks['rank_rates']=={'silver':4.0,'gold':5.0} and thanks['calculation_mode']=='rank_additive'
     five=m.annotate({'title':'5のつく日','rate':4,'target_store_limited':False});assert five['eligibility_mode']=='not_limited'
+
+if __name__=='__main__':
+    test_lottery_is_informational_only();test_annotations_are_fail_closed_and_gold_aware();print('campaign metadata tests: PASS')
