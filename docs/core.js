@@ -22,6 +22,8 @@
     const blocksFirstDay=dynamic.some(x=>x.title.includes('プレミアムな日曜日')||x.title.includes('爆買WEEK')||x.title.includes('Brand Week')||x.title.includes('ブランドウィーク'));if(d.getDate()===1&&!blocksFirstDay)out.push({title:'ファーストデイ',rate:3,rate_label:'+3%',entry_required:true,target_store_limited:false,eligibility_rule:'all',informational:false,rankable:true,kind:'fixed'});out.push(...dynamic);
     const merged=[],pos=new Map();for(const x of out){const k=norm(x.title)+(x.rate_label||'');if(!pos.has(k)){pos.set(k,merged.length);merged.push(x);continue}const i=pos.get(k);if(merged[i].kind==='fixed'&&x.kind==='guide')merged[i]=x}return merged.slice(0,10)
   }
+  function rateKey(rate){const n=Number(rate);return Number.isFinite(n)?(Number.isInteger(n)?String(n):String(n)):''}
+  function bonusCapInfo(rate,bonusData){const r=Number(rate),key=rateKey(r),raw=bonusData?.rate_caps?.[key],cap=Number(raw);if(key&&Number.isFinite(cap)&&cap>0)return{known:true,cap,source:'official'};if(r===10)return{known:true,cap:10000,source:'legacy'};if(r===5)return{known:true,cap:5000,source:'legacy'};return{known:false,cap:null,source:'unknown'}}
   function fmtRate(r){return Number.isInteger(r)?String(r):String(r).replace(/\.0+$/,'')}
-  return {norm,slugFromInput,rowObj,namesFor,matchKind,searchCatalog,rowsFor,indexedMatches,matchRows,shopRate,safeCampaignTitle,eventsFor,fmtRate};
+  return {norm,slugFromInput,rowObj,namesFor,matchKind,searchCatalog,rowsFor,indexedMatches,matchRows,shopRate,safeCampaignTitle,eventsFor,rateKey,bonusCapInfo,fmtRate};
 });
