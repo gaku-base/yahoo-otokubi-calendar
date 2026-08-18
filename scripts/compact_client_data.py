@@ -14,6 +14,10 @@ def norm_name(s:str)->str:
 
 def validate(out):
     if out.get('format')!=FORMAT: raise ValueError('wrong compact format')
+    for k,v in (out.get('rate_caps') or {}).items():
+        rate=float(k);cap=float(v)
+        if not math.isfinite(rate) or rate<=0 or rate>100:raise ValueError(f'invalid rate cap key {k}')
+        if not math.isfinite(cap) or cap<=0:raise ValueError(f'invalid rate cap value {v}')
     catalog=out.get('store_catalog',[]); dates=set(); identities=set()
     for i,c in enumerate(catalog):
         if not isinstance(c,list) or len(c)<2: raise ValueError(f'invalid catalog row {i}')
@@ -37,7 +41,7 @@ def validate(out):
     return out
 
 def compact_full(src):
-    out={'schema':src.get('schema'),'version':VERSION,'format':FORMAT,'source':src.get('source'),'updated_at':src.get('updated_at'),'errors':src.get('errors',[]),'validation':src.get('validation',{}),'store_catalog':[],'days':[]}
+    out={'schema':src.get('schema'),'version':VERSION,'format':FORMAT,'source':src.get('source'),'updated_at':src.get('updated_at'),'errors':src.get('errors',[]),'validation':src.get('validation',{}),'rate_caps':src.get('rate_caps',{}),'rate_cap_source':src.get('rate_cap_source'),'rate_cap_errors':src.get('rate_cap_errors',[]),'store_catalog':[],'days':[]}
     catalog_index={}
     def store_id(name,slug):
         key=('s:'+slug) if slug else ('n:'+norm_name(name))
@@ -74,6 +78,6 @@ def main(argv=None):
     if len(raw)>MAX_BYTES: raise SystemExit(f'compact bonus.json still too large: {len(raw)} bytes > {MAX_BYTES}')
     if out.get('validation',{}).get('ok') is not True: raise SystemExit('refusing to publish client data whose source validation is not OK')
     write_atomic(outp,raw)
-    print(json.dumps({'version':VERSION,'compact_bytes':len(raw),'days':len(out.get('days',[])),'catalog':len(out.get('store_catalog',[])),'offers':sum(len(d.get('offers',[])) for d in out.get('days',[]))},ensure_ascii=False))
+    print(json.dumps({'version':VERSION,'compact_bytes':len(raw),'days':len(out.get('days',[])),'catalog':len(out.get('store_catalog',[])),'offers':sum(len(d.get('offers',[])) for d in out.get('days',[])),'rate_caps':len(out.get('rate_caps',{}))},ensure_ascii=False))
 
 if __name__=='__main__': main()
