@@ -27,8 +27,11 @@ def test_clean_confirmation_rejects_hidden_uncertainty():
     assert not m.clean_confirmation(rec('ok',audit=1))
     assert not m.clean_confirmation(rec('ok',conf=1))
 
-def test_recovery_policy_requires_two_bounded_confirmations():
+def test_recovery_policy_requires_two_parallel_bounded_confirmations():
     assert m.RECOVERY_ATTEMPTS==2
     assert m.REQUIRED_CLEAN_CONFIRMATIONS==2
+    assert m.RECOVERY_DAY_CONCURRENCY==1
     src=(S/'scrape_v075.py').read_text(encoding='utf-8')
+    assert 'asyncio.gather(*(one_attempt(n)' in src
+    assert "'parallel_attempts':True" in src
     assert 'fewer than two clean confirmations' in src
