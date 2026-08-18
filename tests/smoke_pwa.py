@@ -9,6 +9,16 @@ def wait_loaded(page):
     text=page.locator('#dataState').inner_text();m=re.search(r'BONUS\+\s+(\d+)日',text)
     assert m and int(m.group(1))>0,text;assert 'BONUS+データ取得失敗' not in text,text
 
+def check_sunday_start(page):
+    page.evaluate("()=>{view=new Date(2026,7,1);selectedIso='';render()}")
+    assert page.locator('#calendar .dow').all_inner_texts()==['日','月','火','水','木','金','土']
+    aug_col=page.evaluate("()=>{const cal=document.querySelector('#calendar'),b=[...cal.querySelectorAll('button.day')].find(x=>x.getAttribute('aria-label')==='8月1日');return ([...cal.children].indexOf(b)-7)%7}")
+    assert aug_col==6,aug_col
+    page.evaluate("()=>{view=new Date(2026,8,1);selectedIso='';render()}")
+    sep_col=page.evaluate("()=>{const cal=document.querySelector('#calendar'),b=[...cal.querySelectorAll('button.day')].find(x=>x.getAttribute('aria-label')==='9月1日');return ([...cal.children].indexOf(b)-7)%7}")
+    assert sep_col==2,sep_col
+    page.evaluate("()=>{view=new Date(2026,7,1);selectedIso='';render()}")
+
 def target_offer(page):
     return page.evaluate(r'''() => {const cat=bonus.store_catalog||[];let d=(bonus.days||[]).find(x=>x.date==='2026-08-17'&&(x.offers||[]).some(o=>(cat[o[0]]||[])[1]==='tplink'&&Number(o[1])===5));if(!d)d=(bonus.days||[]).find(x=>x.status==='ok'&&Array.isArray(x.offers)&&x.offers.length);if(!d)return null;let o=d.offers.find(o=>(cat[o[0]]||[])[1]==='tplink')||d.offers[0],c=cat[o[0]]||[];return {date:d.date,name:c[0]||'',slug:c[1]||'',rate:Number(o[1])};}''')
 
@@ -58,7 +68,7 @@ def check_top3_ranking(page):
     assert '2位' in texts[1] and '1日' in texts[1] and '7,000pt' in texts[1],texts
     assert '3位' in texts[2] and '4日' in texts[2] and '7,000pt' in texts[2],texts
     assert page.locator('#calendar .day.rank1').get_attribute('aria-label')=='8月2日';assert page.locator('#calendar .day.rank2').get_attribute('aria-label')=='8月1日';assert page.locator('#calendar .day.rank3').get_attribute('aria-label')=='8月4日'
-    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約10,000pt' in detail,detail
+    page.locator('#top3Strip .top3Item').first.click();detail=page.locator('#detail').inner_text();assert '今月のお得度 1位' in detail and '予定購入 100,000円' in detail and '約10,000pt' in detail,detail;assert 'エントリー済・クーポンは使用しない前提' in detail,detail
     page.get_by_role('button',name='8月5日').click();detail=page.locator('#detail').inner_text();assert '今月のお得度 4位' in detail and '予定購入 100,000円' in detail and '約6,000pt' in detail,detail;assert 'BONUS+ 約5,000pt' in detail and 'その他 約1,000pt' in detail,detail
     page.get_by_role('button',name='8月3日').click();detail=page.locator('#detail').inner_text();assert '順位計算に使える確認済み追加特典なし' in detail and '約0pt' in detail,detail;assert 'BONUS+' not in detail,detail
 
@@ -66,22 +76,22 @@ def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
         iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True)
-        page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert page.locator('#purchaseAmount').is_visible();target=target_offer(page);check_offer(page,target);check_known_alias(page,'ジョーシン','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki')
+        page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert page.locator('#purchaseAmount').is_visible();assert 'v0.9.0' in page.locator('.versionBadge').inner_text();assert 'エントリー済' in page.locator('#calcAssumption').inner_text() and 'クーポンは使用しない' in page.locator('#calcAssumption').inner_text();assert page.evaluate('OTOKUBI_CALC_ASSUMPTIONS.entryCompleted && OTOKUBI_CALC_ASSUMPTIONS.ignoreCoupons') is True;check_sunday_start(page);target=target_offer(page);check_offer(page,target);check_known_alias(page,'ジョーシン','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki')
         page.wait_for_function("document.querySelector('#top3Strip') !== null");assert page.locator('#top3Strip').is_visible()
-        page.evaluate("navigator.serviceWorker && navigator.serviceWorker.ready");page.wait_for_function("navigator.serviceWorker && navigator.serviceWorker.controller !== null",timeout=10000);page.evaluate("load()");wait_loaded(page)
+        page.evaluate("navigator.serviceWorker && navigator.serviceWorker.ready");page.wait_for_function("navigator.serviceWorker && navigator.serviceWorker.controller !== null",timeout=10000);page.evaluate("load()");wait_loaded(page);assert page.locator('#calendar .dow').first.inner_text()=='日'
         cache_keys=page.evaluate("async()=> (await (await caches.open('otokubi-data-v1')).keys()).map(r=>r.url)")
         assert len(cache_keys)==3,cache_keys;assert all('?v=' not in u for u in cache_keys),cache_keys;assert {u.rsplit('/',1)[-1] for u in cache_keys}=={'bonus.json','campaigns.json','status.json'},cache_keys
-        iphone.set_offline(True);page.reload(wait_until='domcontentloaded');wait_loaded(page);check_known_alias(page,'ジョーシン','joshin');assert page.locator('#top3Strip').is_visible();iphone.set_offline(False)
+        iphone.set_offline(True);page.reload(wait_until='domcontentloaded');wait_loaded(page);assert page.locator('#calendar .dow').first.inner_text()=='日';check_known_alias(page,'ジョーシン','joshin');assert page.locator('#top3Strip').is_visible();iphone.set_offline(False)
         with page.expect_download(timeout=10000) as dl:page.locator('#pngBtn').click()
         assert dl.value.suggested_filename.endswith('.png');iphone.close()
 
         desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo')
-        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_offer(page,target_offer(page));check_known_alias(page,'Joshin','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki');check_campaign_metadata(page);check_top3_ranking(page);cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns");widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)];assert len(widths)==2 and widths[0]>widths[1]>=350,cols;desktop.close()
+        page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_sunday_start(page);check_offer(page,target_offer(page));check_known_alias(page,'Joshin','joshin');check_known_alias(page,'ヤマダ電機','yamada-denki');check_campaign_metadata(page);check_top3_ranking(page);cols=page.locator('.workspace').evaluate("e=>getComputedStyle(e).gridTemplateColumns");widths=[float(x) for x in re.findall(r'([0-9.]+)px',cols)];assert len(widths)==2 and widths[0]>widths[1]>=350,cols;desktop.close()
 
         statusctx=browser.new_context(viewport={'width':390,'height':844},locale='ja-JP',timezone_id='Asia/Tokyo',service_workers='block')
         failed={'schema':1,'version':'0.8.0','last_attempt_at':'2026-08-17T10:00:00+09:00','last_attempt_ok':False,'last_attempt_exit_code':2,'message':'最新更新失敗','issues':['Incomplete BONUS+ days: 1'],'attempt_counts':{'partial':1},'attempt_source_updated_at':'2026-08-17T10:00:00+09:00','last_good_updated_at':'2026-08-17T09:00:00+09:00'}
         statusctx.route('**/data/status.json*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(failed,ensure_ascii=False)))
         page=statusctx.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);state=page.locator('#dataState').inner_text();assert '最新取得失敗' in state and '前回正常データを使用' in state,state;assert 'warning' in (page.locator('#dataState').get_attribute('class') or '');statusctx.close();browser.close()
-    print('PWA smoke: PASS (clicked day info + silent non-eligible + purchase amount caps + Top3 + Joshin/Yamada + iPhone offline + Windows + PNG)')
+    print('PWA smoke: PASS (Sunday-first + entry-complete/coupon-ignore assumptions + clicked day info + silent non-eligible + purchase amount caps + Top3 + Joshin/Yamada + iPhone offline + Windows + PNG)')
 
 if __name__=='__main__':main()
