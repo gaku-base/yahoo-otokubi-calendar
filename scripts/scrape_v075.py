@@ -10,6 +10,7 @@ import scrape_v074 as strict
 from calendar_campaigns import collect_calendar,merge_safe_guide
 from guide_campaigns import collect_target_guide,merge_target_guide
 from bonus_terms import collect_rate_caps
+from today_campaigns import collect_today_campaigns,merge_today_campaigns
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DATA.mkdir(exist_ok=True)
 JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2;REQUIRED_CLEAN_CONFIRMATIONS=2;RECOVERY_DAY_CONCURRENCY=1
@@ -85,17 +86,18 @@ async def main():
         cap_page=await ctx.new_page();rate_terms=await collect_rate_caps(cap_page);await cap_page.close()
         cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close()
         raw_guide=await legacy.collect_guide(browser)
-        target_page=await ctx.new_page();target_guide=await collect_target_guide(target_page);await target_page.close();await browser.close()
+        target_page=await ctx.new_page();target_guide=await collect_target_guide(target_page);await target_page.close()
+        today_page=await ctx.new_page();today_bonus=await collect_today_campaigns(today_page);await today_page.close();await browser.close()
     bonus['rate_caps']=rate_terms.get('rate_caps',{});bonus['rate_cap_source']=rate_terms.get('source');bonus['rate_cap_errors']=rate_terms.get('errors',[])
-    rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide);rows=merge_target_guide(rows,target_guide.get('campaigns',[]))
-    errors=list(calendar.get('errors',[]))+list(target_guide.get('errors',[]))
-    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'schedule_source':target_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':errors}
+    rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide);rows=merge_target_guide(rows,target_guide.get('campaigns',[]));rows=merge_today_campaigns(rows,today_bonus.get('campaigns',[]))
+    errors=list(calendar.get('errors',[]))+list(target_guide.get('errors',[]))+list(today_bonus.get('errors',[]))
+    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'schedule_source':target_guide.get('source'),'today_source':today_bonus.get('source'),'today_marker_found':today_bonus.get('marker_found',False),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':errors}
     base_validation=validator.validate(bonus,campaigns);issues=list(base_validation.get('issues',[]))+validate_campaigns(campaigns)
     audit_issues=sum(len(d.get('diagnostics',{}).get('category_option_audit',{}).get('issues',[])) for d in bonus.get('days',[]));conflicts=sum(len(d.get('diagnostics',{}).get('multi_rate_conflicts',[])) for d in bonus.get('days',[]))
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
     if conflicts:issues.append(f'Multi-rate store conflicts: {conflicts}')
     recovered=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in bonus.get('days',[]));recovery_attempts=sum(len(d.get('diagnostics',{}).get('recovery',{}).get('attempts',[])) for d in bonus.get('days',[]))
-    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'informational_campaigns':sum(bool(c.get('informational')) for c in rows),'bonus_rate_caps':len(bonus.get('rate_caps',{})),'bonus_rate_cap_errors':len(bonus.get('rate_cap_errors',[])),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
+    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'informational_campaigns':sum(bool(c.get('informational')) for c in rows),'today_campaigns':len(today_bonus.get('campaigns',[])),'today_campaign_marker_found':bool(today_bonus.get('marker_found')),'bonus_rate_caps':len(bonus.get('rate_caps',{})),'bonus_rate_cap_errors':len(bonus.get('rate_cap_errors',[])),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
     validation={'ok':not issues,'issues':issues[:50],'counts':counts};bonus['version']=VERSION;bonus['schema']=SCHEMA;bonus['validation']=validation;campaigns['validation']=validation
     (DATA/'bonus.json').write_text(json.dumps(bonus,ensure_ascii=False,indent=2),encoding='utf-8');(DATA/'campaigns.json').write_text(json.dumps(campaigns,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(validation,ensure_ascii=False))
