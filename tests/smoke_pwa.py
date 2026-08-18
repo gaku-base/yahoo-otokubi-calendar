@@ -30,13 +30,14 @@ def check_total_point_display(page):
     day2=page.get_by_role('button',name='8月2日');assert '計 5,590pt' in day2.inner_text(),day2.inner_text();day2.click();detail=page.locator('#detail').inner_text();assert '合計獲得 約5,590pt' in detail,detail;assert '通常ポイント 7% 約2,320pt' in detail,detail;assert 'BONUS+ 約3,270pt' in detail,detail;assert '通常日比 +1,635pt' in detail,detail
     day1=page.get_by_role('button',name='8月1日');assert '計 3,955pt' in day1.inner_text(),day1.inner_text();day1.click();detail=page.locator('#detail').inner_text();assert '通常日と同じ水準' in detail and '合計獲得 約3,955pt' in detail and '通常ポイント 7% 約2,320pt' in detail,detail
 
-def check_unknown_day_excluded(page):
+def check_unknown_day_zero(page):
     days=synthetic_days();page.evaluate(f'''() => {{
       bonus={{rate_caps:{{'5':5000,'10':10000}},store_catalog:[['テストショップ','test-shop']],days:[{days}]}};
       campaigns={{campaigns:[{{title:'ボーナスストアPlus 優良ストアでさらに+3%',dates:['2026-08-18'],rate:3,rate_label:'+3%',is_total:false,is_max:false,informational:false,rankable:true,target_store_limited:true,eligibility_rule:'preferred_bonus_store',conditions:['注文3,000円～ 付与上限5,000円相当']}}]}};
       activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';document.querySelector('#purchaseAmount').value='35980';view=new Date(2026,7,1);selectedIso='';render();
     }}''')
-    page.wait_for_function("document.querySelector('#top3Strip .top3Notice') !== null");assert '要確認日' in page.locator('#top3Strip .top3Notice').inner_text();cell=page.get_by_role('button',name='8月18日');assert '計 要確認' in cell.inner_text(),cell.inner_text();cell.click();detail=page.locator('#detail').inner_text();assert '合計獲得 要確認' in detail and '通常ポイント 7%' in detail and '優良ストア対象可否を自動判定できない' in detail,detail
+    page.wait_for_function("document.querySelector('#top3Strip .top3Notice') !== null");notice=page.locator('#top3Strip .top3Notice').inner_text();assert '未確認分は0ptとして順位計算' in notice,notice
+    cell=page.get_by_role('button',name='8月18日');text=cell.inner_text();assert '計 3,955pt※' in text and '計 要確認' not in text,text;cell.click();detail=page.locator('#detail').inner_text();assert '合計獲得 約3,955pt' in detail and '未確認分 0pt計上' in detail and '未確認特典 0pt' in detail and '優良ストア対象可否を自動判定できない' in detail,detail;assert '合計獲得 要確認' not in detail,detail
 
 def check_premium_sunday_and_rank(page):
     days=synthetic_days();page.evaluate(f'''() => {{
@@ -47,13 +48,14 @@ def check_premium_sunday_and_rank(page):
       ]}};activeShopQuery='https://store.shopping.yahoo.co.jp/test-shop/';document.querySelector('#shop').value='テストショップ';document.querySelector('#purchaseAmount').value='35980';document.querySelector('#yahooRank').value='unknown';view=new Date(2026,7,1);selectedIso='';render();
     }}''')
     r=page.evaluate("()=>OtokubiDailyPoints.scoreDay('2026-08-23',23,activeShopQuery,35980)");assert r['pointExact'] is True and r['campaignPoints']==1635 and r['basePoints']==2320 and r['totalPoints']==5590,r
-    r=page.evaluate("()=>OtokubiDailyPoints.scoreDay('2026-08-22',22,activeShopQuery,35980)");assert r['pointExact'] is False,r
+    r=page.evaluate("()=>OtokubiDailyPoints.scoreDay('2026-08-22',22,activeShopQuery,35980)");assert r['pointExact'] is False and r['campaignPoints']==0 and r['totalPoints']==3955,r
+    page.get_by_role('button',name='8月22日').click();detail=page.locator('#detail').inner_text();assert '合計獲得 約3,955pt' in detail and 'ヤフショランク未設定' in detail and '0ptとして計上' in detail,detail
     page.locator('#yahooRank').select_option('gold');r=page.evaluate("()=>OtokubiDailyPoints.scoreDay('2026-08-22',22,activeShopQuery,35980)");assert r['pointExact'] is True and r['campaignPoints']==1000 and r['totalPoints']==4955,r
 
 def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
-        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True);page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert 'v0.9.5' in page.locator('.versionBadge').inner_text();assert '通常ポイント 7%' in page.locator('#calcAssumption').inner_text();assert page.locator('#fiveDayEligible').is_checked();assert page.locator('#yahooRank').input_value() in ('unknown','silver','gold','none');check_sunday_start(page);check_mobile_bonus_badge(page);check_alias(page,'ジョーシン','joshin');check_alias(page,'ヤマダ電機','yamada-denki');iphone.close()
-        desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo');page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_total_point_display(page);check_unknown_day_excluded(page);check_premium_sunday_and_rank(page);desktop.close();browser.close()
-    print('PWA smoke: PASS (v0.9.5 total points + normal 7% + daily-difference ranking + uncertainty exclusion)')
+        iphone=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,locale='ja-JP',timezone_id='Asia/Tokyo',accept_downloads=True);page=iphone.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);assert 'v0.9.6' in page.locator('.versionBadge').inner_text();assert '通常ポイント 7%' in page.locator('#calcAssumption').inner_text();assert '未確認条件は0pt' in page.locator('#calcAssumption').inner_text();assert page.locator('#fiveDayEligible').is_checked();assert page.locator('#yahooRank').input_value() in ('unknown','silver','gold','none');check_sunday_start(page);check_mobile_bonus_badge(page);check_alias(page,'ジョーシン','joshin');check_alias(page,'ヤマダ電機','yamada-denki');iphone.close()
+        desktop=browser.new_context(viewport={'width':1440,'height':900},locale='ja-JP',timezone_id='Asia/Tokyo');page=desktop.new_page();page.goto(URL,wait_until='domcontentloaded');wait_loaded(page);check_total_point_display(page);check_unknown_day_zero(page);check_premium_sunday_and_rank(page);desktop.close();browser.close()
+    print('PWA smoke: PASS (v0.9.6 total points + unresolved as zero + daily-difference ranking)')
 if __name__=='__main__':main()

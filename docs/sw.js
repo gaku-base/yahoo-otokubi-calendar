@@ -1,4 +1,4 @@
-const SHELL_CACHE='otokubi-v095',DATA_CACHE='otokubi-data-v1';
+const SHELL_CACHE='otokubi-v096',DATA_CACHE='otokubi-data-v1';
 const ASSETS=['./','index.html','styles.css','rank.css','refresh.css','mobile_badge.css','core.js','app.js','daily_point_core.js','rank.js','date_rule.js','manual_refresh.js','calc_assumptions.js','sunday_start.js','mobile_badge.js','manifest.webmanifest','icon.svg'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(SHELL_CACHE);await c.addAll(ASSETS);await self.skipWaiting();})()));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('otokubi-')&&k!==SHELL_CACHE&&k!==DATA_CACHE).map(k=>caches.delete(k)));await self.clients.claim();})()));
