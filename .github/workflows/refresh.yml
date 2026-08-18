@@ -69,9 +69,16 @@ jobs:
           assert len({x['date'] for x in d['days']})==len(d['days'])
           assert 'dailybonus/calendar' in (c.get('source') or '') and c.get('validation',{}).get('ok') is True and c.get('campaigns')
           assert not c.get('errors'),c.get('errors')
-          titles=[x.get('title','') for x in c['campaigns']]
-          assert not any(any(noise in title for noise in ('クーポン','くじ','抽選','対象商品購入')) for title in titles)
+          rows=c['campaigns']; titles=[x.get('title','') for x in rows]
+          for row in rows:
+              title=row.get('title','')
+              if any(noise in title for noise in ('クーポン','くじ','抽選')):
+                  assert row.get('informational') is True,row
+                  assert row.get('rankable') is False,row
+                  assert row.get('rate') is None,row
+          assert not any('対象商品購入' in title for title in titles),titles
           assert sum('Brand Week' in title or 'ブランドウィーク' in title for title in titles)<=1,titles
+          assert any(x.get('eligibility_rule')=='bonus_plus_member' for x in rows if 'ボーナスストアPlusでさらに+2%' in x.get('title','')),rows
           assert s.get('version')=='0.8.0' and isinstance(s.get('last_attempt_ok'),bool)
           if s['last_attempt_ok']:
               assert d.get('version')=='0.8.0'
@@ -80,7 +87,7 @@ jobs:
               assert s.get('last_good_updated_at')==d.get('updated_at')
               assert s.get('issues') or s.get('message')
           assert p.stat().st_size<6*1024*1024
-          print('v0.8.0 publication selection: PASS','attempt_ok',s['last_attempt_ok'],'bytes',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False))
+          print('v0.9.2 publication selection: PASS','attempt_ok',s['last_attempt_ok'],'bytes',p.stat().st_size,'counts',json.dumps(counts,ensure_ascii=False),'campaigns',len(rows))
           PY
       - name: Commit data and refresh status
         run: |
