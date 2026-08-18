@@ -55,6 +55,21 @@ jobs:
               print('Yahoo official campaign semantics: PASS',len(rows),len(lottery))
           asyncio.run(main())
           PY
+      - name: Full live Yahoo refresh integration
+        run: |
+          python scripts/scrape_v075.py
+          python - <<'PY'
+          import json
+          b=json.load(open('data/bonus.json',encoding='utf-8'));c=json.load(open('data/campaigns.json',encoding='utf-8'))
+          assert b['validation']['ok'] and c['validation']['ok'],(b.get('validation'),c.get('validation'))
+          assert not b['validation']['counts'].get('partial') and not b['validation']['counts'].get('bad')
+          plus2=[x for x in c['campaigns'] if 'ボーナスストアPlusでさらに+2' in x.get('title','')]
+          assert plus2 and all(x.get('eligibility_mode')=='bonus_store_day' for x in plus2),plus2
+          lottery=[x for x in c['campaigns'] if 'くじ' in x.get('title','') or '抽選' in x.get('title','')]
+          assert lottery and all(x.get('informational') and x.get('calculation_mode')=='lottery' for x in lottery),lottery
+          day=next(x for x in b['days'] if x['date']=='2026-08-17');assert any(s.get('slug')=='tplink' and float(s.get('rate'))==5 for s in day.get('stores',[]))
+          print('Full live refresh integration: PASS',b['validation']['counts'])
+          PY
       - name: Build local site
         run: |
           mkdir -p docs/data
