@@ -8,6 +8,7 @@ import scrape_v066 as validator
 import scrape_v073 as state073
 import scrape_v074 as strict
 from calendar_campaigns import collect_calendar,merge_safe_guide
+from guide_campaigns import collect_target_guide,merge_target_guide
 
 ROOT=Path(__file__).resolve().parents[1];DATA=ROOT/'data';DATA.mkdir(exist_ok=True)
 JST=timezone(timedelta(hours=9));VERSION='0.7.5';SCHEMA=5;RECOVERY_ATTEMPTS=2;REQUIRED_CLEAN_CONFIRMATIONS=2
@@ -60,6 +61,7 @@ async def collect_bonus_with_recovery(page):
 def validate_campaigns(campaigns):
     issues=[];rows=campaigns.get('campaigns',[])
     if not rows:issues.append('Official bonus calendar produced no campaigns')
+    if campaigns.get('errors'):issues.append('Official campaign schedule source reported errors')
     if not any(c.get('dates') for c in rows):issues.append('Campaign calendar has no dates')
     for c in rows:
         if any(x in c.get('title','') for x in ('クーポン','くじ','抽選')) and not c.get('informational'):
@@ -74,9 +76,12 @@ async def main():
         browser=await p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
         ctx=await browser.new_context(locale='ja-JP',timezone_id='Asia/Tokyo',user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139 Safari/537.36')
         page=await ctx.new_page();bonus=await collect_bonus_with_recovery(page)
-        cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close();raw_guide=await legacy.collect_guide(browser);await browser.close()
-    rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide)
-    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':calendar.get('errors',[])}
+        cal_page=await ctx.new_page();calendar=await collect_calendar(cal_page);await cal_page.close()
+        raw_guide=await legacy.collect_guide(browser)
+        target_page=await ctx.new_page();target_guide=await collect_target_guide(target_page);await target_page.close();await browser.close()
+    rows=merge_safe_guide(calendar.get('campaigns',[]),raw_guide);rows=merge_target_guide(rows,target_guide.get('campaigns',[]))
+    errors=list(calendar.get('errors',[]))+list(target_guide.get('errors',[]))
+    campaigns={'schema':SCHEMA,'version':VERSION,'source':calendar.get('source'),'fallback_source':raw_guide.get('source'),'schedule_source':target_guide.get('source'),'updated_at':datetime.now(JST).isoformat(),'campaigns':rows,'errors':errors}
     base_validation=validator.validate(bonus,campaigns);issues=list(base_validation.get('issues',[]))+validate_campaigns(campaigns)
     audit_issues=sum(len(d.get('diagnostics',{}).get('category_option_audit',{}).get('issues',[])) for d in bonus.get('days',[]));conflicts=sum(len(d.get('diagnostics',{}).get('multi_rate_conflicts',[])) for d in bonus.get('days',[]))
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
