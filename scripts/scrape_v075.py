@@ -39,8 +39,6 @@ async def retry_event(context,original,attempts=RECOVERY_ATTEMPTS):
     if confirmed:
         best=clean[-1]
     else:
-        # A single clean retry after an incomplete pass is not enough to publish a
-        # hard not-found result. Keep the best diagnostics but force uncertainty.
         if best.get('status')=='ok':
             best=dict(best);best['diagnostics']=dict(best.get('diagnostics',{}));best['status']='partial';best['error']='recovery produced fewer than two clean confirmations; refusing hard not-found decisions'
     dg=best.setdefault('diagnostics',{});dg['recovery']={'initial_status':original.get('status'),'attempts':history,'clean_confirmations':len(clean),'required_clean_confirmations':REQUIRED_CLEAN_CONFIRMATIONS,'recovered':confirmed}
@@ -61,9 +59,13 @@ async def collect_bonus_with_recovery(page):
 
 def validate_campaigns(campaigns):
     issues=[];rows=campaigns.get('campaigns',[])
-    if not rows:issues.append('Official bonus calendar produced no point campaigns')
-    if any(any(x in c.get('title','') for x in ('クーポン','くじ','抽選','対象商品購入')) for c in rows):issues.append('Noisy campaign leaked into calendar')
+    if not rows:issues.append('Official bonus calendar produced no campaigns')
     if not any(c.get('dates') for c in rows):issues.append('Campaign calendar has no dates')
+    for c in rows:
+        if any(x in c.get('title','') for x in ('クーポン','くじ','抽選')) and not c.get('informational'):
+            issues.append(f"Non-point event was not marked informational: {c.get('title')}")
+        if c.get('eligibility_rule')=='bonus_plus_member' and not c.get('target_store_limited'):
+            issues.append(f"BONUS+ membership campaign lost target-store flag: {c.get('title')}")
     return issues
 
 async def main():
@@ -80,7 +82,7 @@ async def main():
     if audit_issues:issues.append(f'Category option audit issues: {audit_issues}')
     if conflicts:issues.append(f'Multi-rate store conflicts: {conflicts}')
     recovered=sum(bool(d.get('diagnostics',{}).get('recovery',{}).get('recovered')) for d in bonus.get('days',[]));recovery_attempts=sum(len(d.get('diagnostics',{}).get('recovery',{}).get('attempts',[])) for d in bonus.get('days',[]))
-    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
+    counts=dict(base_validation.get('counts',{}));counts.update({'campaigns':len(rows),'campaign_dates':len({d for c in rows for d in c.get('dates',[])}),'informational_campaigns':sum(bool(c.get('informational')) for c in rows),'elapsed_seconds':round(time.monotonic()-started,1),'concurrency':strict.CONCURRENCY,'category_audit_issues':audit_issues,'multi_rate_conflicts':conflicts,'recovered_days':recovered,'recovery_attempts':recovery_attempts})
     validation={'ok':not issues,'issues':issues[:50],'counts':counts};bonus['version']=VERSION;bonus['schema']=SCHEMA;bonus['validation']=validation;campaigns['validation']=validation
     (DATA/'bonus.json').write_text(json.dumps(bonus,ensure_ascii=False,indent=2),encoding='utf-8');(DATA/'campaigns.json').write_text(json.dumps(campaigns,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(validation,ensure_ascii=False))
