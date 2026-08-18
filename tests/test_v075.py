@@ -1,4 +1,4 @@
-import importlib.util,sys
+import asyncio,importlib.util,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];S=ROOT/'scripts'
 if str(S) not in sys.path:sys.path.insert(0,str(S))
@@ -27,8 +27,37 @@ def test_clean_confirmation_rejects_hidden_uncertainty():
     assert not m.clean_confirmation(rec('ok',audit=1))
     assert not m.clean_confirmation(rec('ok',conf=1))
 
-def test_recovery_policy_requires_two_bounded_confirmations():
+def test_recovery_policy_requires_two_parallel_bounded_confirmations():
     assert m.RECOVERY_ATTEMPTS==2
     assert m.REQUIRED_CLEAN_CONFIRMATIONS==2
+    assert m.RECOVERY_DAY_CONCURRENCY==1
     src=(S/'scrape_v075.py').read_text(encoding='utf-8')
+    assert 'asyncio.gather(*(one_attempt(n)' in src
+    assert "'parallel_attempts':True" in src
     assert 'fewer than two clean confirmations' in src
+
+def test_retry_event_runs_two_independent_confirmations_concurrently(monkeypatch):
+    active=0;peak=0;opened=0;closed=0
+    class Page:
+        async def close(self):
+            nonlocal closed;closed+=1
+    class Context:
+        async def new_page(self):
+            nonlocal opened;opened+=1;return Page()
+    async def fake_collect(page,date,url,label):
+        nonlocal active,peak
+        active+=1;peak=max(peak,active)
+        await asyncio.sleep(.02)
+        active-=1
+        return rec('ok')
+    monkeypatch.setattr(m.strict,'collect_event',fake_collect)
+    original=rec('partial',failed=1,succeeded=49,stores=5900)
+    original.update({'date':'2026-08-18','url':'https://example.invalid/event','label':'test'})
+    result=asyncio.run(m.retry_event(Context(),original))
+    recovery=result['diagnostics']['recovery']
+    assert peak==2
+    assert opened==2 and closed==2
+    assert recovery['parallel_attempts'] is True
+    assert recovery['clean_confirmations']==2
+    assert recovery['recovered'] is True
+    assert result['status']=='ok'
