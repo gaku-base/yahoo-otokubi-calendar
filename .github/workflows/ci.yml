@@ -37,6 +37,8 @@ jobs:
           node --check docs/calc_assumptions.js
           node --check docs/sunday_start.js
           node --check docs/mobile_badge.js
+          node --check docs/fresh_campaigns.js
           node --check docs/sw.js
           node tests/test_core.js
           node tests/test_daily_point_core.js
+          node tests/test_fresh_campaigns.js
