@@ -9,7 +9,12 @@ function enhanceBonusBadges(){
     b.innerHTML=`<span class="bonusPrefix">BONUS+</span><strong class="bonusRate">${m[1]}%</strong>${m[2]?'<span class="bonusPending">?</span>':''}`;
   });
 }
+function loadFreshCampaigns(){
+  if(document.querySelector('script[data-fresh-campaigns]'))return;
+  const s=document.createElement('script');s.src='fresh_campaigns.js?v=099';s.async=true;s.dataset.freshCampaigns='1';document.head.appendChild(s);
+}
 const previousRender=render;
 render=function(){previousRender();queueMicrotask(enhanceBonusBadges)};
+loadFreshCampaigns();
 window.addEventListener('load',()=>setTimeout(enhanceBonusBadges,260));
 })();
