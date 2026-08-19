@@ -3,15 +3,14 @@
   if(typeof module==='object'&&module.exports){module.exports=api;return;}
   root.OtokubiFreshCampaigns=api;
   if(typeof window==='undefined')return;
-  window.addEventListener('load',()=>{
-    setTimeout(()=>api.refreshFromMain({
-      getCurrent:()=>typeof campaigns!=='undefined'?campaigns:null,
-      setCurrent:v=>{campaigns=v;},
-      onChanged:()=>{if(typeof refreshSelectedDetail==='function')refreshSelectedDetail();},
-      fetcher:window.fetch.bind(window),
-      hostname:window.location.hostname
-    }),350);
-  });
+  const run=()=>setTimeout(()=>api.refreshFromMain({
+    getCurrent:()=>typeof campaigns!=='undefined'?campaigns:null,
+    setCurrent:v=>{campaigns=v;},
+    onChanged:()=>{if(typeof refreshSelectedDetail==='function')refreshSelectedDetail();},
+    fetcher:window.fetch.bind(window),
+    hostname:window.location.hostname
+  }),350);
+  if(document.readyState==='complete')run();else window.addEventListener('load',run,{once:true});
 })(typeof self!=='undefined'?self:this,function(){
 'use strict';
 const RAW_CAMPAIGNS='https://raw.githubusercontent.com/gaku-base/yahoo-otokubi-calendar/main/data/campaigns.json';
