@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-08-20T18:54:51.539546+09:00",
+  "updated_at": "2026-08-21T00:53:53.541214+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -15,6 +15,7 @@
       "is_max": false,
       "is_total": false,
       "informational": false,
+      "rankable": true,
       "dates": [
         "2026-08-08",
         "2026-08-12",
@@ -33,19 +34,18 @@
         "2026-11-01"
       ],
       "conditions": [
-        "注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定",
         "注文3,000円～",
         "付与上限5,000円相当",
         "要エントリー",
-        "対象ストア限定"
+        "対象ストア限定",
+        "要エントリー 対象ストア限定 注文3,000円～ 付与上限5,000円相当"
       ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/",
       "entry_required": true,
       "target_store_limited": true,
       "eligibility_rule": "preferred_bonus_store",
-      "rankable": true,
-      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
+      "same_day_discovery": true
     },
     {
       "title": "ボーナスストアPlusでさらに+2%",
@@ -54,6 +54,7 @@
       "is_max": false,
       "is_total": false,
       "informational": false,
+      "rankable": true,
       "dates": [
         "2026-08-08",
         "2026-08-12",
@@ -74,19 +75,18 @@
         "2026-10-07"
       ],
       "conditions": [
-        "注文3,000円～ 付与上限5,000円相当 要エントリー 対象ストア限定",
         "注文3,000円～",
         "付与上限5,000円相当",
         "要エントリー",
-        "対象ストア限定"
+        "対象ストア限定",
+        "要エントリー 対象ストア限定 注文3,000円～ 付与上限5,000円相当"
       ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/",
       "entry_required": true,
       "target_store_limited": true,
       "eligibility_rule": "bonus_plus_member",
-      "rankable": true,
-      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
+      "same_day_discovery": true
     },
     {
       "title": "ボーナスストアPlusくじ",
@@ -96,7 +96,7 @@
       "is_total": false,
       "informational": true,
       "dates": [
-        "2026-08-20",
+        "2026-08-21",
         "2026-09-19",
         "2026-09-20",
         "2026-09-21"
@@ -259,13 +259,13 @@
       "stores": 274409,
       "categories": 2400,
       "count_warnings": 0,
-      "campaign_dates": 34,
+      "campaign_dates": 33,
       "informational_campaigns": 3,
-      "today_campaigns": 1,
+      "today_campaigns": 3,
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 264.3,
+      "elapsed_seconds": 262.8,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
