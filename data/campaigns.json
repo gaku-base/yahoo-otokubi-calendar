@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-09-01T05:54:54.047582+09:00",
+  "updated_at": "2026-09-01T09:42:01.318807+09:00",
   "campaigns": [
     {
       "title": "1日開催 ファーストデイ",
@@ -206,7 +206,7 @@
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 264.6,
+      "elapsed_seconds": 267.1,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
