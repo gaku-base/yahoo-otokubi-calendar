@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-09-02T22:49:07.455290+09:00",
+  "updated_at": "2026-09-03T03:47:15.373423+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -119,7 +119,8 @@
         "2026-09-20",
         "2026-09-27",
         "2026-10-04",
-        "2026-10-11"
+        "2026-10-11",
+        "2026-10-18"
       ],
       "conditions": [
         "注文5,000円～ 付与上限3,000円相当 要エントリー 対象ストア限定"
@@ -143,6 +144,26 @@
       ],
       "conditions": [
         "先着順 利用下限金額あり 対象ストア・商品限定"
+      ],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "entry_required": false,
+      "target_store_limited": true,
+      "eligibility_rule": "campaign_target_store",
+      "rankable": false
+    },
+    {
+      "title": "敬老の日特集クーポン",
+      "rate": null,
+      "rate_label": "先着順",
+      "is_max": false,
+      "is_total": false,
+      "informational": true,
+      "dates": [
+        "2026-09-10"
+      ],
+      "conditions": [
+        "先着順 対象ストア限定"
       ],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
@@ -179,17 +200,17 @@
       "ok": 48,
       "partial": 0,
       "bad": 0,
-      "campaigns": 6,
+      "campaigns": 7,
       "stores": 278551,
       "categories": 2400,
       "count_warnings": 0,
-      "campaign_dates": 21,
-      "informational_campaigns": 1,
+      "campaign_dates": 23,
+      "informational_campaigns": 2,
       "today_campaigns": 2,
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 255.4,
+      "elapsed_seconds": 268.6,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
