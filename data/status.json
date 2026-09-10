@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.8.0",
-  "last_attempt_at": "2026-09-11T03:32:44.075489+09:00",
+  "last_attempt_at": "2026-09-11T08:15:26.454061+09:00",
   "last_attempt_ok": false,
   "last_attempt_exit_code": 2,
   "message": "最新更新失敗: Guide fetch/parser reported errors; Official campaign schedule source reported errors",
@@ -24,13 +24,13 @@
     "today_campaign_marker_found": false,
     "bonus_rate_caps": 2,
     "bonus_rate_cap_errors": 0,
-    "elapsed_seconds": 263.2,
+    "elapsed_seconds": 258.7,
     "concurrency": 6,
     "category_audit_issues": 0,
     "multi_rate_conflicts": 0,
     "recovered_days": 0,
     "recovery_attempts": 0
   },
-  "attempt_source_updated_at": "2026-09-11T03:28:15.984618+09:00",
+  "attempt_source_updated_at": "2026-09-11T08:11:02.871529+09:00",
   "last_good_updated_at": "2026-09-09T22:43:15.459493+09:00"
 }
