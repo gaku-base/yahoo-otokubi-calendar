@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-09-15T23:24:24.629785+09:00",
+  "updated_at": "2026-09-17T03:59:08.770719+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -38,7 +38,8 @@
         "注文3,000円～",
         "付与上限5,000円相当",
         "要エントリー",
-        "対象ストア限定"
+        "対象ストア限定",
+        "要エントリー 対象ストア限定 注文3,000円～ 付与上限5,000円相当"
       ],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/",
@@ -46,7 +47,8 @@
       "target_store_limited": true,
       "eligibility_rule": "preferred_bonus_store",
       "rankable": true,
-      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
+      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
+      "same_day_discovery": true
     },
     {
       "title": "ボーナスストアPlusでさらに+2%",
@@ -88,27 +90,6 @@
       "eligibility_rule": "bonus_plus_member",
       "rankable": true,
       "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-      "same_day_discovery": true
-    },
-    {
-      "title": "5のつく日",
-      "rate": 4.0,
-      "rate_label": "+4%",
-      "is_max": false,
-      "is_total": false,
-      "informational": false,
-      "dates": [
-        "2026-09-15"
-      ],
-      "conditions": [
-        "要エントリー 指定支払い方法あり 付与上限2,000円相当"
-      ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "entry_required": true,
-      "target_store_limited": false,
-      "eligibility_rule": "all",
-      "rankable": true,
       "same_day_discovery": true
     },
     {
@@ -223,13 +204,13 @@
     "ok": true,
     "issues": [],
     "counts": {
-      "days": 46,
-      "ok": 46,
+      "days": 44,
+      "ok": 44,
       "partial": 0,
       "bad": 0,
-      "campaigns": 8,
-      "stores": 255197,
-      "categories": 2300,
+      "campaigns": 7,
+      "stores": 237538,
+      "categories": 2200,
       "count_warnings": 0,
       "campaign_dates": 27,
       "informational_campaigns": 2,
@@ -237,7 +218,7 @@
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 241.7,
+      "elapsed_seconds": 257.9,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
