@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-09-25T23:41:00.221295+09:00",
+  "updated_at": "2026-09-27T03:41:37.323355+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -85,8 +85,7 @@
         "注文3,000円～",
         "付与上限5,000円相当",
         "要エントリー",
-        "対象ストア限定",
-        "要エントリー 対象ストア限定 注文3,000円～ 付与上限5,000円相当"
+        "対象ストア限定"
       ],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/",
@@ -94,50 +93,7 @@
       "target_store_limited": true,
       "eligibility_rule": "bonus_plus_member",
       "rankable": true,
-      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
-      "same_day_discovery": true
-    },
-    {
-      "title": "5のつく日",
-      "rate": 4.0,
-      "rate_label": "+4%",
-      "is_max": false,
-      "is_total": false,
-      "informational": false,
-      "dates": [
-        "2026-09-25"
-      ],
-      "conditions": [
-        "要エントリー 指定支払い方法あり 付与上限2,000円相当"
-      ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "entry_required": true,
-      "target_store_limited": false,
-      "eligibility_rule": "all",
-      "rankable": true,
-      "same_day_discovery": true
-    },
-    {
-      "title": "ZOZOWEEK ポイントアップDAY",
-      "rate": 4.0,
-      "rate_label": "+4%",
-      "is_max": false,
-      "is_total": false,
-      "informational": false,
-      "dates": [
-        "2026-09-25"
-      ],
-      "conditions": [
-        "要エントリー 対象ストア限定 注文5,000円～ 付与上限1,000円相当"
-      ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
-      "entry_required": true,
-      "target_store_limited": true,
-      "eligibility_rule": "campaign_target_store",
-      "rankable": true,
-      "same_day_discovery": true
+      "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
     },
     {
       "title": "プレミアムな日曜日",
@@ -154,14 +110,16 @@
         "2026-11-08"
       ],
       "conditions": [
-        "注文5,000円～ 付与上限3,000円相当 要エントリー 対象ストア限定"
+        "注文5,000円～ 付与上限3,000円相当 要エントリー 対象ストア限定",
+        "要エントリー 対象ストア限定 注文5,000円～ 付与上限3,000円相当"
       ],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/lypsunday/",
       "entry_required": true,
       "target_store_limited": true,
       "eligibility_rule": "campaign_target_store",
-      "rankable": true
+      "rankable": true,
+      "same_day_discovery": true
     },
     {
       "title": "ボーナスストアPlusくじ",
@@ -176,34 +134,16 @@
         "2026-09-29"
       ],
       "conditions": [
-        "対象ストア限定 1注文1,000円～69,999円"
+        "対象ストア限定 1注文1,000円～69,999円",
+        "対象ストア限定 1注文1000円～69999円"
       ],
       "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
       "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/bsplus/",
       "entry_required": false,
       "target_store_limited": true,
       "eligibility_rule": "campaign_target_store",
-      "rankable": false
-    },
-    {
-      "title": "日曜対象ストア限定クーポン",
-      "rate": null,
-      "rate_label": "先着順",
-      "is_max": false,
-      "is_total": false,
-      "informational": true,
-      "dates": [
-        "2026-09-27"
-      ],
-      "conditions": [
-        "先着順 利用下限金額あり 対象ストア・商品限定"
-      ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
-      "entry_required": false,
-      "target_store_limited": true,
-      "eligibility_rule": "campaign_target_store",
-      "rankable": false
+      "rankable": false,
+      "same_day_discovery": true
     },
     {
       "title": "1日開催 ファーストデイ",
@@ -224,6 +164,26 @@
       "target_store_limited": false,
       "eligibility_rule": "all",
       "rankable": true
+    },
+    {
+      "title": "日曜対象ストア限定クーポン",
+      "rate": null,
+      "rate_label": "先着順",
+      "is_max": false,
+      "is_total": false,
+      "informational": true,
+      "dates": [
+        "2026-10-04"
+      ],
+      "conditions": [
+        "先着順 利用下限金額あり 対象ストア・商品限定"
+      ],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "entry_required": false,
+      "target_store_limited": true,
+      "eligibility_rule": "campaign_target_store",
+      "rankable": false
     },
     {
       "title": "ヤフショ感謝デー",
@@ -254,17 +214,17 @@
       "ok": 44,
       "partial": 0,
       "bad": 0,
-      "campaigns": 9,
-      "stores": 242174,
+      "campaigns": 7,
+      "stores": 242279,
       "categories": 2200,
       "count_warnings": 0,
       "campaign_dates": 30,
       "informational_campaigns": 2,
-      "today_campaigns": 3,
+      "today_campaigns": 2,
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 239.0,
+      "elapsed_seconds": 255.0,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
