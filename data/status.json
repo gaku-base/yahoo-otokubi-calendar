@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "version": "0.8.0",
-  "last_attempt_at": "2026-09-30T09:31:56.741024+09:00",
+  "last_attempt_at": "2026-09-30T18:46:01.857963+09:00",
   "last_attempt_ok": true,
   "last_attempt_exit_code": 0,
   "message": "更新成功",
   "issues": [],
   "attempt_counts": {
-    "days": 44,
-    "ok": 44,
+    "days": 42,
+    "ok": 42,
     "partial": 0,
     "bad": 0,
     "campaigns": 8,
-    "stores": 242284,
-    "categories": 2200,
+    "stores": 222428,
+    "categories": 2100,
     "count_warnings": 0,
     "campaign_dates": 21,
     "informational_campaigns": 1,
@@ -21,13 +21,13 @@
     "today_campaign_marker_found": true,
     "bonus_rate_caps": 2,
     "bonus_rate_cap_errors": 0,
-    "elapsed_seconds": 259.1,
+    "elapsed_seconds": 238.0,
     "concurrency": 6,
     "category_audit_issues": 0,
     "multi_rate_conflicts": 0,
     "recovered_days": 0,
     "recovery_attempts": 0
   },
-  "attempt_source_updated_at": "2026-09-30T09:27:34.780181+09:00",
-  "last_good_updated_at": "2026-09-30T09:27:34.780181+09:00"
+  "attempt_source_updated_at": "2026-09-30T18:42:01.272970+09:00",
+  "last_good_updated_at": "2026-09-30T18:42:01.272970+09:00"
 }
