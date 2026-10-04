@@ -6,7 +6,7 @@
   "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/",
   "today_source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
   "today_marker_found": true,
-  "updated_at": "2026-10-04T18:50:56.987401+09:00",
+  "updated_at": "2026-10-05T03:42:29.592474+09:00",
   "campaigns": [
     {
       "title": "ボーナスストアPlus 優良ストアでさらに+3%",
@@ -81,31 +81,6 @@
       "schedule_source": "https://shopping.yahoo.co.jp/promotion/campaign/guide/"
     },
     {
-      "title": "プレミアムな日曜日",
-      "rate": 5.0,
-      "rate_label": "+5%",
-      "is_max": false,
-      "is_total": false,
-      "informational": false,
-      "dates": [
-        "2026-10-04",
-        "2026-10-11",
-        "2026-10-18",
-        "2026-11-08"
-      ],
-      "conditions": [
-        "注文5,000円～ 付与上限3,000円相当 要エントリー 対象ストア限定",
-        "要エントリー 対象ストア限定 注文5,000円～ 付与上限3,000円相当"
-      ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/lypsunday/",
-      "entry_required": true,
-      "target_store_limited": true,
-      "eligibility_rule": "campaign_target_store",
-      "rankable": true,
-      "same_day_discovery": true
-    },
-    {
       "title": "5のつく日",
       "rate": 4.0,
       "rate_label": "+4%",
@@ -118,12 +93,13 @@
       "conditions": [
         "要エントリー 指定支払い方法あり 付与上限2,000円相当"
       ],
-      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
-      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/5day/",
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
+      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/",
       "entry_required": true,
       "target_store_limited": false,
       "eligibility_rule": "all",
-      "rankable": true
+      "rankable": true,
+      "same_day_discovery": true
     },
     {
       "title": "Brand Week",
@@ -170,6 +146,28 @@
       "target_store_limited": true,
       "eligibility_rule": "campaign_target_store",
       "rankable": false
+    },
+    {
+      "title": "プレミアムな日曜日",
+      "rate": 5.0,
+      "rate_label": "+5%",
+      "is_max": false,
+      "is_total": false,
+      "informational": false,
+      "dates": [
+        "2026-10-11",
+        "2026-10-18",
+        "2026-11-08"
+      ],
+      "conditions": [
+        "注文5,000円～ 付与上限3,000円相当 要エントリー 対象ストア限定"
+      ],
+      "source": "https://shopping.yahoo.co.jp/promotion/campaign/dailybonus/calendar/",
+      "source_url": "https://shopping.yahoo.co.jp/promotion/campaign/lypsunday/",
+      "entry_required": true,
+      "target_store_limited": true,
+      "eligibility_rule": "campaign_target_store",
+      "rankable": true
     },
     {
       "title": "日曜対象ストア限定クーポン",
@@ -224,13 +222,13 @@
       "stores": 222181,
       "categories": 2100,
       "count_warnings": 0,
-      "campaign_dates": 25,
+      "campaign_dates": 24,
       "informational_campaigns": 2,
       "today_campaigns": 1,
       "today_campaign_marker_found": true,
       "bonus_rate_caps": 2,
       "bonus_rate_cap_errors": 0,
-      "elapsed_seconds": 213.6,
+      "elapsed_seconds": 215.8,
       "concurrency": 6,
       "category_audit_issues": 0,
       "multi_rate_conflicts": 0,
