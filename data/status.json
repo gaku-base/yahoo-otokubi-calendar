@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.8.0",
-  "last_attempt_at": "2026-10-18T02:55:18.823300+09:00",
+  "last_attempt_at": "2026-10-18T08:11:31.156213+09:00",
   "last_attempt_ok": true,
   "last_attempt_exit_code": 0,
   "message": "更新成功",
@@ -21,13 +21,13 @@
     "today_campaign_marker_found": true,
     "bonus_rate_caps": 2,
     "bonus_rate_cap_errors": 0,
-    "elapsed_seconds": 214.5,
+    "elapsed_seconds": 216.4,
     "concurrency": 6,
     "category_audit_issues": 0,
     "multi_rate_conflicts": 0,
     "recovered_days": 0,
     "recovery_attempts": 0
   },
-  "attempt_source_updated_at": "2026-10-18T02:51:42.465813+09:00",
-  "last_good_updated_at": "2026-10-18T02:51:42.465813+09:00"
+  "attempt_source_updated_at": "2026-10-18T08:07:52.969192+09:00",
+  "last_good_updated_at": "2026-10-18T08:07:52.969192+09:00"
 }
