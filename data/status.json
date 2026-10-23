@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.8.0",
-  "last_attempt_at": "2026-10-23T23:33:16.052133+09:00",
+  "last_attempt_at": "2026-10-24T04:27:38.993171+09:00",
   "last_attempt_ok": false,
   "last_attempt_exit_code": 2,
   "message": "最新更新失敗: Guide fetch/parser reported errors; Official campaign schedule source reported errors",
@@ -18,19 +18,19 @@
     "stores": 210122,
     "categories": 1950,
     "count_warnings": 0,
-    "campaign_dates": 25,
+    "campaign_dates": 26,
     "informational_campaigns": 1,
     "today_campaigns": 0,
     "today_campaign_marker_found": false,
     "bonus_rate_caps": 2,
     "bonus_rate_cap_errors": 0,
-    "elapsed_seconds": 216.0,
+    "elapsed_seconds": 214.9,
     "concurrency": 6,
     "category_audit_issues": 0,
     "multi_rate_conflicts": 0,
     "recovered_days": 0,
     "recovery_attempts": 0
   },
-  "attempt_source_updated_at": "2026-10-23T23:29:36.542648+09:00",
+  "attempt_source_updated_at": "2026-10-24T04:24:00.681311+09:00",
   "last_good_updated_at": "2026-10-22T23:31:05.178282+09:00"
 }
